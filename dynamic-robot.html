@@ -7,7 +7,7 @@
     <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
  </head>
 	<body>
-	<h3 id="title" align="center">Plots for all robots</h3>
+	<h3 id="title" align="center">Plots</h3>
 	<table border="0" style="width:100%;height:100%;">
 		<tr>
 			<td><div id="placeholder0" style="width:1300px;height:220px;"></div></td>
@@ -31,6 +31,16 @@ $(function () {
     var totalPoints = 300, plotNum = 3, trajLen = 20;
     var labels = ["voltage", "current", "speed"];
     var robotName = ["cb01", "cb02", "pioneer01"];
+    var robot = "<?php echo $_GET["robot"];?>";
+	var curve = "<?php echo $_GET["curve"];?>";
+	if (robot != undefined && robot != '')
+	{
+		$("#title").append(" for " + robot);
+	}
+	else
+	{
+		$("#title").append(" for cb01");
+	}
     var dataset = {
 		"0v": {label: labels[0], data: []},
 		"0c": {label: labels[1], data: []},
