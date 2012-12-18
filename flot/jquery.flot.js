@@ -2595,5 +2595,8 @@
     function floorInBase(n, base) {
         return base * Math.floor(n / base);
     }
-    
+    $.a = function()
+    {
+		return "asdf";
+	}
 })(jQuery);
