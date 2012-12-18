@@ -10,25 +10,27 @@
 	<h3 id="title" align="center">Plots</h3>
 	<table border="0" style="width:100%;height:100%;">
 		<tr>
-			<td><div id="placeholder0" style="width:1300px;height:220px;"></div></td>
-			<td>cb01</td>
-		</tr>
-		<tr>
-			<td><div id="placeholder1" style="width:1300px;height:220px;"></div></td>
-			<td>cb02</td>
-		</tr>
-		<tr>
-			<td><div id="placeholder2" style="width:1300px;height:220px;"></div></td>
-			<td>Pioneer01</td>
+			<td><div id="placeholder0" style="width:1300px;height:500px;"></div></td>
+			<td style="width:100px">
+				<a  id="robotname"></a>
+				<p id="v">voltage: </p>
+				<p id="c">current: </p>
+				<p id="s">speed: </p>
+			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholdert" style="width:800px;height:600px;"></div></td>
+			<td>
+				<p>cb01</p>
+				<p id="x">x:</p>
+				<p id="y">y:</p>
+			</td>
 		</tr>
 	</table>
 	<p id="debug">debug: </p>
 <script type="text/javascript">
 $(function () {
-    var totalPoints = 300, plotNum = 3, trajLen = 20;
+    var totalPoints = 300, plotNum = 1, trajLen = 20, trajPlotNum = 1;
     var labels = ["voltage", "current", "speed"];
     var robotName = ["cb01", "cb02", "pioneer01"];
     var robot = "<?php echo $_GET["robot"];?>";
@@ -36,10 +38,12 @@ $(function () {
 	if (robot != undefined && robot != '')
 	{
 		$("#title").append(" for " + robot);
+		$("#robotname").append(robot);
 	}
 	else
 	{
-		$("#title").append(" for cb01");
+		$("#title").append(" for unknown robot");
+		$("#robotname").append("unknown robot");
 	}
     var dataset = {
 		"0v": {label: labels[0], data: []},
@@ -96,6 +100,14 @@ $(function () {
                 y = 100;
             dataset[label].data.push(y);
         }
+        if (label[1] == "v" || label[1] == "c" || label[1] == "s")
+		{
+			document.getElementById(label[1]).innerHTML = dataset[label].label + ": " + Math.round(y);
+		}
+        if (label[1] == "x" || label[1] == "y")
+		{
+			document.getElementById(label[1]).innerHTML = label[1] + ": " + Math.round(y);
+		}
         // zip the generated y values with the x values
         var res = [];
         for (var i = 0; i < dataset[label].data.length; ++ i)
@@ -118,7 +130,7 @@ $(function () {
 		plot[i] = $.plot($("#placeholder"+i), data, options);
 	}
 	var res = new Array();
-	for (var i = 0; i < 2; ++ i)
+	for (var i = 0; i < trajPlotNum; ++ i)
 	{
 		getData(i+"x");
 		getData(i+"y");
@@ -128,8 +140,8 @@ $(function () {
 		for (var j = init; j < len; ++ j)
 			res[i].push([dataset[i+"x"].data[j], dataset[i+"y"].data[j]]);
 	}
-	var data = [{label: dataset["0y"].label, data: res[0]},
-	{label: dataset["1y"].label, data: res[1]} ];
+	// trajPlotNum
+	var data = [{label: dataset["0y"].label, data: res[0]}];
 	plot[plotNum] = $.plot($("#placeholdert"), data, {
 		series: {shadowSize: 0, lines: {show: true} },
 		yaxis: { min: 0, max: 100 },
@@ -145,7 +157,7 @@ $(function () {
 			plot[i].draw();
 		}
 		var res = new Array();
-		for (var i = 0; i < 2; ++ i)
+		for (var i = 0; i < trajPlotNum; ++ i)
 		{
 			getData(i+"x");
 			getData(i+"y");
@@ -155,7 +167,7 @@ $(function () {
 			for (var j = init; j < len; ++ j)
 				res[i].push([dataset[i+"x"].data[j], dataset[i+"y"].data[j]]);
 		}
-		plot[plotNum].setData([res[0], res[1]]);
+		plot[plotNum].setData([res[0]]);
 		plot[plotNum].draw();
 		setTimeout(update, 100);
 	}

@@ -6,7 +6,12 @@ $single_server = array(
     'database' => 15
 );
 $client = new Predis\Client($single_server);
-$client->set('test', rand(0, 10000));
-$retval = $client->get('test');
-echo $retval / 10000;
+$PLOT_NUM = 3;
+for ($i = 0; $i < $PLOT_NUM * 5; ++ $i)
+{
+	$client->set('test', rand(0, 10000));
+	$retval = $client->get('test');
+	echo $retval / 10000;
+	echo " ";
+}
 ?>

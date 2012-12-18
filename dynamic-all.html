@@ -5,30 +5,54 @@
     <title>Plots for Autolab</title>
     <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="dynamic.js"></script>
  </head>
 	<body>
 	<h3 id="title" align="center">Plots for all robots</h3>
 	<table border="0" style="width:100%;height:100%;">
 		<tr>
 			<td><div id="placeholder0" style="width:1300px;height:220px;"></div></td>
-			<td>cb01</td>
+			<td style="width:100px">
+				<a href="dynamic-robot.html?robot=cb01">cb01</a>
+				<p id="0v">voltage: </p>
+				<p id="0c">current: </p>
+				<p id="0s">speed: </p>
+			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholder1" style="width:1300px;height:220px;"></div></td>
-			<td>cb02</td>
+			<td style="width:100px">
+				<a href="dynamic-robot.html?robot=cb02">cb02</a>
+				<p id="1v">voltage: </p>
+				<p id="1c">current: </p>
+				<p id="1s">speed: </p>
+			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholder2" style="width:1300px;height:220px;"></div></td>
-			<td>Pioneer01</td>
+			<td>
+				<a href="dynamic-robot.html?robot=Pioneer01">Pioneer01</a>
+				<p id="2v">voltage: </p>
+				<p id="2c">current: </p>
+				<p id="2s">speed: </p>
+			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholdert" style="width:800px;height:600px;"></div></td>
+			<td>
+				<p>cb01</p>
+				<p id="0x">x</p>
+				<p id="0y">y</p>
+				<p>cb02</p>
+				<p id="1x">x</p>
+				<p id="1y">y</p>
+			</td>
 		</tr>
 	</table>
 	<p id="debug">debug: </p>
 <script type="text/javascript">
 $(function () {
-    var totalPoints = 300, plotNum = 3, trajLen = 20;
+    var totalPoints = 300, plotNum = 3, trajLen = 20, trajPlotNum = 2;
     var labels = ["voltage", "current", "speed"];
     var robotName = ["cb01", "cb02", "pioneer01"];
     var dataset = {
@@ -48,7 +72,11 @@ $(function () {
 		"0y": {label: robotName[0], data: []},
 		"1x": {label: robotName[1], data: []},
 		"1y": {label: robotName[1], data: []}, }
-    var redis_ret = 0;
+    var redis_ret = 0, data_ret = [];
+    for (var i = 0; i  < plotNum * 3 + trajPlotNum * 2; ++ i)
+	{
+		data_ret.push(0);
+	}
 	function connectRedis()
 	{
 		var xmlhttp;
@@ -64,8 +92,12 @@ $(function () {
 		{
 			if (xmlhttp.readyState==4 && xmlhttp.status==200)
 			{
-				redis_ret = parseFloat(xmlhttp.responseText);
-				document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
+				var ret = xmlhttp.responseText.split(" ");
+				for (var i = 0; i < ret.length; ++ i)
+				{
+					data_ret[i] = parseFloat(ret[i]);
+				}
+				document.getElementById("debug").innerHTML = 'debug: ' + pos;
 			}
 		}
 		xmlhttp.open("GET","connectRedis.php",true);
@@ -79,13 +111,43 @@ $(function () {
         while (dataset[label].data.length < totalPoints)
         {
             var prev = dataset[label].data.length > 0 ? dataset[label].data[dataset[label].data.length - 1] : 0;
-            var y = prev + Math.random() * 10 - 5;
+            //var y = prev + Math.random() * 10 - 5;
+            connectRedis();
+            var pos = 0;
+            switch (label[1])
+            {
+				case 'v':
+				pos = 0;
+				break;
+				case 'c':
+				pos = 1;
+				break;
+				case 's':
+				pos = 2;
+				break;
+				case 'x':
+				pos = 3;
+				break;
+				case 'y':
+				pos = 4;
+				break;
+			}
+			pos = pos + parseInt(label[0]) * 5;
+            var y = prev + data_ret[pos] * 10 - 5;
             if (y < 0)
                 y = 0;
             if (y > 100)
                 y = 100;
             dataset[label].data.push(y);
         }
+        if ((label[0] == "0" || label[0] == "1" || label[0] == "2") && (label[1] == "v" || label[1] == "c" || label[1] == "s"))
+		{
+			document.getElementById(label).innerHTML = dataset[label].label + ": " + Math.round(y);
+		}
+        if ((label[0] == "0" || label[0] == "1") && (label[1] == "x" || label[1] == "y"))
+		{
+			document.getElementById(label).innerHTML = label[1] + ": " + Math.round(y);
+		}
         // zip the generated y values with the x values
         var res = [];
         for (var i = 0; i < dataset[label].data.length; ++ i)
@@ -108,7 +170,7 @@ $(function () {
 		plot[i] = $.plot($("#placeholder"+i), data, options);
 	}
 	var res = new Array();
-	for (var i = 0; i < 2; ++ i)
+	for (var i = 0; i < trajPlotNum; ++ i)
 	{
 		getData(i+"x");
 		getData(i+"y");
@@ -135,7 +197,7 @@ $(function () {
 			plot[i].draw();
 		}
 		var res = new Array();
-		for (var i = 0; i < 2; ++ i)
+		for (var i = 0; i < trajPlotNum; ++ i)
 		{
 			getData(i+"x");
 			getData(i+"y");
@@ -150,7 +212,6 @@ $(function () {
 		setTimeout(update, 100);
 	}
     update();
-    document.getElementById("debug").innerHTML = $.a();
 });
 </script>
 	</body>
