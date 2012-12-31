@@ -1,3 +1,6 @@
+// by fzhan@Autolab
+// calculate the data we want from the data obtained
+
 #ifndef _DATACALCULATOR_H_
 #define _DATACALCULATOR_H_
 #include "param.h"

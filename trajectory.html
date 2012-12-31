@@ -11,6 +11,8 @@
     <h1>Trajectory plot</h1>
     <div id="placeholder" style="width:600px;height:300px;"></div>
 <script type="text/javascript">
+// by fzhan@autolab
+// generate a plot of trajectory.
 $(function () {
     var data = [], data2 = [], totalPoints = 30;
     function getRandomData() {
@@ -36,7 +38,7 @@ $(function () {
                 y = 100;
             data2.push(y);
         }
-        // zip the generated y values with the x values
+        // combine data and data2, and plot them in one plot, so the trajectory is obtained.
         var res = [];
         for (var i = 0; i < data.length; ++i)
             res.push([data2[i], data[i]])

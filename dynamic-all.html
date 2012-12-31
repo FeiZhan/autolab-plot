@@ -51,6 +51,8 @@
 	</table>
 	<p id="debug">debug: </p>
 <script type="text/javascript">
+// by fzhan@Autolab
+// dynamic figures for all the robots and trajectories.
 $(function () {
     var totalPoints = 300, plotNum = 3, trajLen = 20, trajPlotNum = 2;
     var labels = ["voltage", "current", "speed"];
@@ -77,6 +79,7 @@ $(function () {
 	{
 		data_ret.push(0);
 	}
+	// connect to Redis to retrieve data asynchronously
 	function connectRedis()
 	{
 		var xmlhttp;
@@ -103,6 +106,7 @@ $(function () {
 		xmlhttp.open("GET","connectRedis.php",true);
 		xmlhttp.send();
 	}
+	// get data from connectRedis().
     function getData(label) {
 		if (dataset[label] == undefined)
 			return [0, 0];
@@ -113,6 +117,7 @@ $(function () {
             var prev = dataset[label].data.length > 0 ? dataset[label].data[dataset[label].data.length - 1] : 0;
             //var y = prev + Math.random() * 10 - 5;
             connectRedis();
+            // get the corresponding order of that plot
             var pos = 0;
             switch (label[1])
             {
@@ -140,6 +145,7 @@ $(function () {
                 y = 100;
             dataset[label].data.push(y);
         }
+        // add the number to the corresponding label
         if ((label[0] == "0" || label[0] == "1" || label[0] == "2") && (label[1] == "v" || label[1] == "c" || label[1] == "s"))
 		{
 			document.getElementById(label).innerHTML = dataset[label].label + ": " + Math.round(y);
@@ -161,6 +167,7 @@ $(function () {
         xaxis: { min: -totalPoints + 1, max: 0},
 		grid: {show: true},
     };
+    // plot an array of plots
     var plot = new Array();
     for (var i = 0; i < plotNum; ++ i)
     {
@@ -169,6 +176,7 @@ $(function () {
 		{label: dataset[i+"s"].label, data: getData(i+"s")} ];
 		plot[i] = $.plot($("#placeholder"+i), data, options);
 	}
+	// get the data of the trajectories
 	var res = new Array();
 	for (var i = 0; i < trajPlotNum; ++ i)
 	{
@@ -182,20 +190,24 @@ $(function () {
 	}
 	var data = [{label: dataset["0y"].label, data: res[0]},
 	{label: dataset["1y"].label, data: res[1]} ];
+	// plot the trajectories initially
 	plot[plotNum] = $.plot($("#placeholdert"), data, {
 		series: {shadowSize: 0, lines: {show: true} },
 		yaxis: { min: 0, max: 100 },
 		xaxis: { min: 0, max: totalPoints},
 		grid: {show: true},
 	});
+	// update dynamically
 	function update()
 	{
+		// update plots
 		for (var i = 0; i < plotNum; ++ i)
 		{
 			var data = [getData(i+"v"), getData(i+"c"), getData(i+"s")];
 			plot[i].setData(data);
 			plot[i].draw();
 		}
+		// update trajectories
 		var res = new Array();
 		for (var i = 0; i < trajPlotNum; ++ i)
 		{

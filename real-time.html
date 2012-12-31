@@ -30,6 +30,8 @@
 	</form>
 	<p id="debug">debug: </p>
 <script type="text/javascript">
+// by fzhan@Autolab
+// real-time plot of a robot.
 $(function () {
     var robot = "<?php echo $_GET["robot"];?>";
 	var curve = "<?php echo $_GET["curve"];?>";
@@ -52,6 +54,7 @@ $(function () {
 		}
 	}
 	var colorset = ["Blue", "Red", "Black"];
+	// modify the title to add the curve name
 	if (curve != undefined && curve != '')
 	{
 		$("#title").append(" of " + dataset[curve].label);
@@ -61,6 +64,7 @@ $(function () {
 	{
 		var colorset = ["Blue", "Red", "Black"];
 	}
+	// modify the title to add the robot name
 	if (robot != undefined && robot != '')
 	{
 		$("#title").append(" for " + robot);
@@ -69,12 +73,14 @@ $(function () {
 	{
 		$("#title").append(" for cb01");
 	}
+	// add the hyperlink of different plot.
     $.each(dataset, function(key, val) {
         $("#choices").append('<label for="id' + key + '" style="color:' + val.color + '">' + val.label + ' <a href="real-time.html?curve=' + key + '">(click)</a>; </label>');
     });
     $("#choices").append('<a href="real-time.html">click for all plots</a>');
     $("#debug").append(connectRedis('s'));
     var redis_ret = 0;
+    // connect to redis to retrieve data
 	function connectRedis()
 	{
 		var xmlhttp;
@@ -97,6 +103,7 @@ $(function () {
 		xmlhttp.open("GET","connectRedis.php",true);
 		xmlhttp.send();
 	}
+	// generate random data
     function getRandomData(label) {
 		if (dataset[label] == undefined)
 			return [0, 0];
@@ -138,6 +145,7 @@ $(function () {
 		colors: colorset
     };
     var plot = $.plot($("#placeholder"), [getRandomData("v"), getRandomData("c"), getRandomData("s")], options);
+    // real-time update
     function update() {
 		if (curve == undefined || curve == "")
 			plot.setData([getRandomData("v"), getRandomData("c"), getRandomData("s")]);

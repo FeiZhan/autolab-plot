@@ -1,10 +1,14 @@
 <?php
+// by fzhan@Autolab
+// generate a table of data
+
 $filename = './data/'.$_GET["filename"];
 $file = fopen($filename, "r") or exit("unable to open file");
 
 echo 'successfully opened the data file.<br />';
-//if ()
+
 //$cmd = './a.out'; $ret = passthru($cmd); var_dump($ret);
+// call a c++ program to generate data
 if (exec('./dataparser -f ./data/'.$_GET["filename"], $output, $ret))
 {
 	echo 'failed to plot the curves.<br />';

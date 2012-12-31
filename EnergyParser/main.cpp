@@ -1,3 +1,6 @@
+// by fzhan@Autolab
+// create a executive file to parse the data of the robots, and plot with GNUPlot.
+
 #include <iostream>
 #include "DataParser.h"
 #include "Plot.h"

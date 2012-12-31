@@ -19,6 +19,7 @@ namespace ps
 			return false;
 		}
 		std::string line;
+		// read the first line to parse the title
 		getline(in_file, line);
 		if (! ParseTitle(line))
 		{
@@ -42,6 +43,7 @@ namespace ps
 	bool CDataParser::ParseTitle(const std::string &titles)
 	{
 		std::string titles_tmp(titles);
+		// erase the blanks in the titles
 		for (size_t i = 0; i < titles_tmp.size(); ++ i)
 		{
 			for (size_t j = 0; j < BLANKS.size(); ++ j)
@@ -57,6 +59,7 @@ namespace ps
 		int sep, tmp, title_cnt = 0;
 		std::string title_tmp;
 		memset(m_title_pos, 0, sizeof(m_title_pos));
+		// separate the titles by the SEPARATORs
 		while (titles_tmp.size())
 		{
 			sep = titles_tmp.size();
@@ -91,6 +94,7 @@ namespace ps
 		std::string line_tmp(line);
 		std::vector<std::string> data_vec;
 		int sep, tmp;
+		// separate the data by the SEPARATORs
 		while (line_tmp.size())
 		{
 			sep = line_tmp.size();
@@ -107,6 +111,7 @@ namespace ps
 		}
 		std::stringstream ss;
 		double data[TITLE_SIZE];
+		// read data
 		for (size_t i = 0; i < TITLE_SIZE; ++ i)
 		{
 			if (m_title_pos[i] > 0 && data_vec.size() > m_title_pos[i])
@@ -120,6 +125,7 @@ namespace ps
 				data[i] = 0;
 			}
 		}
+		// calculate the data
 		CDataCalculator dc(data);
 		return dc.GetData();
 	}
