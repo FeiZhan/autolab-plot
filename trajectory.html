@@ -6,15 +6,17 @@
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
     <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+	<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
  </head>
     <body>
     <h1>Trajectory plot</h1>
-    <div id="placeholder" style="width:600px;height:300px;"></div>
+    <div id="placeholder" style="width:600px;height:500px;"></div>
+    <div id="graphics" style="overflow:hidden;position:relative;width:1000px;height:1000px;"></div>
 <script type="text/javascript">
 // by fzhan@autolab
 // generate a plot of trajectory.
 $(function () {
-    var data = [], data2 = [], totalPoints = 30;
+    var data = [], data2 = [], totalPoints = 30, pt = [];
     function getRandomData() {
         if (data.length > 0)
             data = data.slice(1);
@@ -41,7 +43,9 @@ $(function () {
         // combine data and data2, and plot them in one plot, so the trajectory is obtained.
         var res = [];
         for (var i = 0; i < data.length; ++i)
-            res.push([data2[i], data[i]])
+        {
+            res.push([data2[i], data[i]]);
+		}
         return res;
     }
     var options = {
@@ -50,9 +54,53 @@ $(function () {
         xaxis: { min: 0, max: 100 }
     };
     var plot = $.plot($("#placeholder"), [ getRandomData() ], options);
+    // draw the graphics by jsDraw2DX
+    var gr = new jxGraphics(document.getElementById("graphics"));
+    var boundary = new jxRect(new jxPoint(0,0), 600, 600, new jxPen(new jxColor("grey"),'1px'));
+    boundary.draw(gr);
+    var grid = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
+    grid.draw(gr);
+	var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
+	home.draw(gr);
+	var patch1 = new jxCircle(new jxPoint(570, 570), 20, new jxPen(new jxColor("green"),'1px'));
+	patch1.draw(gr);
+	var patch1 = new jxCircle(new jxPoint(30, 570), 20, new jxPen(new jxColor("green"),'1px'));
+	patch1.draw(gr);
+
+    var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
+    var body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
+    body.draw(gr);
+    //var next = new jxPoint( (data2[data.length - 1] * 2 - data2[data.length - 2]), 600 - (data[data.length - 1] * 2 - data2[data.length - 2]) );
+    //var heading = new jxLine(pos, next, new jxPen(new jxColor("red"),'1px'));
+    //heading.draw(gr);
+    
+    var test1 = new jxArc(pos, 50, 10, 0, 180, new jxPen(new jxColor("red"),'1px'));
+    test1.draw(gr);
+    
+    var line = [];
+	for (var i = 0; i < data.length - 1; ++i)
+	{
+		line.push( new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px')) );
+		line[i].draw(gr);
+	}
     function update() {
         plot.setData([ getRandomData() ]);
         plot.draw();
+		// update the trajectory by jsDraw2DX
+		pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
+		body.remove();
+		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
+		body.draw(gr);
+		test1.remove();
+		test1 = new jxArc(pos, 130, 100, 0, 180, new jxPen(new jxColor("red"),'1px'));
+		test1.draw(gr);
+		for (var i = 0; i < data.length - 1; ++i)
+		{
+			line[i].remove();
+			line[i] = new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px'));
+			line[i].draw(gr);
+		}
+        
         setTimeout(update, 200);
     }
     update();
