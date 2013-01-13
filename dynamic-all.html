@@ -13,12 +13,16 @@
 			<td><div id="placeholdert" style="width:1200px;height:900px;"></div></td>
 			<td>
 				<p>cb01:
-					<span id="0x">x</span>
-					<span id="0y">y</span>
+					<span id="r00">x</span>
+					<span id="r01">y</span>
 				</p>
-				<p>cb02:
-					<span id="1x">x</span>
-					<span id="1y">y</span>
+				<p>cb18:
+					<span id="r10">x</span>
+					<span id="r11">y</span>
+				</p>
+				<p>pioneer01:
+					<span id="r20">x</span>
+					<span id="r21">y</span>
 				</p>
 			</td>
 		</tr>
@@ -26,27 +30,27 @@
 			<td><div id="placeholder0" style="width:1300px;height:220px;"></div></td>
 			<td style="width:100px">
 				<a href="dynamic-robot.html?robot=cb01">cb01</a>
-				<p id="0v">voltage: </p>
-				<p id="0c">current: </p>
-				<p id="0s">speed: </p>
+				<p id="r02">voltage: </p>
+				<p id="r03">current: </p>
+				<p id="r04">speed: </p>
 			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholder1" style="width:1300px;height:220px;"></div></td>
 			<td style="width:100px">
 				<a href="dynamic-robot.html?robot=cb02">cb02</a>
-				<p id="1v">voltage: </p>
-				<p id="1c">current: </p>
-				<p id="1s">speed: </p>
+				<p id="r12">voltage: </p>
+				<p id="r13">current: </p>
+				<p id="r14">speed: </p>
 			</td>
 		</tr>
 		<tr>
 			<td><div id="placeholder2" style="width:1300px;height:220px;"></div></td>
 			<td>
 				<a href="dynamic-robot.html?robot=Pioneer01">Pioneer01</a>
-				<p id="2v">voltage: </p>
-				<p id="2c">current: </p>
-				<p id="2s">speed: </p>
+				<p id="r22">voltage: </p>
+				<p id="r23">current: </p>
+				<p id="r24">speed: </p>
 			</td>
 		</tr>
 	</table>
@@ -55,30 +59,27 @@
 // by fzhan@Autolab
 // dynamic figures for all the robots and trajectories.
 $(function () {
-    var totalPoints = 300, plotNum = 3, trajLen = 20, trajPlotNum = 2;
-    var labels = ["voltage", "current", "speed"];
-    var robotName = ["cb01", "cb02", "pioneer01"];
-    var dataset = {
-		"0v": {label: labels[0], data: []},
-		"0c": {label: labels[1], data: []},
-		"0s": {label: labels[2], data: []},
-		"1v": {label: labels[0], data: []},
-		"1c": {label: labels[1], data: []},
-		"1s": {label: labels[2], data: []},
-		"2v": {label: labels[0], data: []},
-		"2c": {label: labels[1], data: []},
-		"2s": {label: labels[2], data: []},
-		"3v": {label: labels[0], data: []},
-		"3c": {label: labels[1], data: []},
-		"3s": {label: labels[2], data: []},
-		"0x": {label: robotName[0], data: []},
-		"0y": {label: robotName[0], data: []},
-		"1x": {label: robotName[1], data: []},
-		"1y": {label: robotName[1], data: []}, }
-    var redis_ret = 0, data_ret = [];
-    for (var i = 0; i  < plotNum * 3 + trajPlotNum * 2; ++ i)
+	var totalPoints = 80, trajLen = 20, robotName = ["cb01", "cb18", "pioneer01"], label = ["valid", "x", "y", "speed", "voltage", "current"];
+	var robotNum = 3, data_ret = [];
+	for (var i = 0; i < robotNum * label.length; ++ i)
 	{
-		data_ret.push(0);
+		data_ret[i] = 0;
+	}
+    var dataset = {};
+	// generate the list of datasets by robot names and labels
+	for (var i = 0; i < robotNum; ++ i)
+	{
+		for (var j = 0; j < label.length; ++ j)
+		{
+			if (label[j] == "valid")
+			{
+				// set the default valid as true
+				dataset[robotName[i] + label[j]] = {label: label[j], data: 1};
+			} else
+			{
+				dataset[robotName[i] + label[j]] = {label: label[j], data: []};
+			}
+		}
 	}
 	// connect to Redis to retrieve data asynchronously
 	function connectRedis()
@@ -97,8 +98,8 @@ $(function () {
 			if (xmlhttp.readyState==4 && xmlhttp.status==200)
 			{
 				var ret = xmlhttp.responseText.split(" ");
-				document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
-				for (var i = 0; i < ret.length; ++ i)
+				//document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
+				for (var i = 0; i < ret.length - 1; ++ i)
 				{
 					data_ret[i] = parseFloat(ret[i]);
 				}
@@ -107,80 +108,65 @@ $(function () {
 		xmlhttp.open("GET","connectRedis.php",true);
 		xmlhttp.send();
 	}
-	// get data from connectRedis().
-    function getData(label) {
-		if (dataset[label] == undefined)
-			return [0, 0];
-        if (dataset[label].data.length > 0)
-            dataset[label].data = dataset[label].data.slice(1);
-        while (dataset[label].data.length < totalPoints)
-        {
-            var prev = dataset[label].data.length > 0 ? dataset[label].data[dataset[label].data.length - 1] : 0;
-            //var y = prev + Math.random() * 10 - 5;
-            connectRedis();
-            // get the corresponding order of that plot
-            var pos = 0;
-            switch (label[1])
-            {
-				case 'v':
-				pos = 0;
-				break;
-				case 'c':
-				pos = 1;
-				break;
-				case 's':
-				pos = 2;
-				break;
-				case 'x':
-				pos = 3;
-				break;
-				case 'y':
-				pos = 4;
-				break;
+	// get data from connectRedis()
+    function updateData() {
+		connectRedis();
+		var cnt = -1;
+		for (i in dataset)
+		{
+			if (i.substr(-5) == "valid")
+			{
+				continue;
 			}
-			pos = pos + parseInt(label[0]) * 5;
-            //var y = prev + data_ret[pos] * 10 - 5;
-            var y = data_ret[pos];
-            if (y < 0)
-                y = 0;
-            if (y > 100)
-                y = 100;
-            dataset[label].data.push(y);
-        }
-        // add the number to the corresponding label
-        if ((label[0] == "0" || label[0] == "1" || label[0] == "2") && (label[1] == "v" || label[1] == "c" || label[1] == "s"))
-		{
-			document.getElementById(label).innerHTML = dataset[label].label + ": " + Math.round(y);
+			++ cnt;
+			var tmp = [];
+			for (j in dataset[i].data)
+			{
+				tmp.push(dataset[i].data[j][1]);
+			}
+			if (tmp.length > 0)
+			{
+				tmp = tmp.slice(1);
+			}
+			var y = 0;
+			while (tmp.length < totalPoints)
+			{
+				y = data_ret[cnt] * 100;
+				//y = Math.floor(Math.random() * 100);
+				tmp.push(y);
+			}
+			// add the number to the corresponding label
+			document.getElementById("r"+ Math.floor(cnt/(label.length-1)) + cnt%(label.length-1)).innerHTML = dataset[i].label + ": " + y;
+			// zip the generated y values with the x values
+			var res = [];
+			for (var j = 0; j < tmp.length; ++ j)
+			{
+				res.push([j + 1 - tmp.length, tmp[j]]);
+			}
+			dataset[i].data = res;
 		}
-        if ((label[0] == "0" || label[0] == "1") && (label[1] == "x" || label[1] == "y"))
-		{
-			document.getElementById(label).innerHTML = label[1] + ": " + Math.round(y);
-		}
-        // zip the generated y values with the x values
-        var res = [];
-        for (var i = 0; i < dataset[label].data.length; ++ i)
-            res.push([i + 1 - dataset[label].data.length, dataset[label].data[i]])
-        return res;
     }
-    var options = {
-		// drawing is faster without shadows
-        series: {shadowSize: 0, lines: {show: true} },
-        yaxis: { min: 0, max: 100 },
-        xaxis: { min: -totalPoints + 1, max: 0},
-		grid: {show: true},
-    };
     // plot an array of plots
+    updateData();
     var plot = new Array();
-    for (var i = 0; i < plotNum; ++ i)
+    for (var i = 0; i < robotNum; ++ i)
     {
-		var data = [{label: dataset[i+"v"].label, data: getData(i+"v")},
-		{label: dataset[i+"c"].label, data: getData(i+"c")},
-		{label: dataset[i+"s"].label, data: getData(i+"s")} ];
-		plot[i] = $.plot($("#placeholder"+i), data, options);
+		var data = [];
+		for (var j = 3; j < label.length; ++ j)
+		{
+			data.push({label: dataset[robotName[i]+label[j]].label, data: dataset[robotName[i]+label[j]].data});
+		}
+		plot[i] = $.plot($("#placeholder"+i), data, {
+			// drawing is faster without shadows
+			series: {shadowSize: 0, lines: {show: true} },
+			yaxis: { min: 0, max: 100 },
+			xaxis: { min: -totalPoints + 1, max: 0},
+			grid: {show: true},
+		});
 	}
 	// get the data of the trajectories
-	var res = new Array();
-	for (var i = 0; i < trajPlotNum; ++ i)
+	/*var res = new Array();
+	for (var i = 0; i < robotNum; ++ i)
 	{
 		getData(i+"x");
 		getData(i+"y");
@@ -193,25 +179,30 @@ $(function () {
 	var data = [{label: dataset["0y"].label, data: res[0]},
 	{label: dataset["1y"].label, data: res[1]} ];
 	// plot the trajectories initially
-	plot[plotNum] = $.plot($("#placeholdert"), data, {
+	plot[robotNum] = $.plot($("#placeholdert"), data, {
 		series: {shadowSize: 0, lines: {show: true} },
 		yaxis: { min: 0, max: 100 },
 		xaxis: { min: 0, max: 100},
 		grid: {show: true},
-	});
+	});*/
 	// update dynamically
 	function update()
 	{
+		updateData();
 		// update plots
-		for (var i = 0; i < plotNum; ++ i)
+		for (var i = 0; i < robotNum; ++ i)
 		{
-			var data = [getData(i+"v"), getData(i+"c"), getData(i+"s")];
-			plot[i].setData(data);
+			var data = [];
+			for (var j = 3; j < label.length; ++ j)
+			{
+				data.push( dataset[robotName[i]+label[j]].data );
+			}
+			plot[i].setData( data );
 			plot[i].draw();
 		}
 		// update trajectories
-		var res = new Array();
-		for (var i = 0; i < trajPlotNum; ++ i)
+		/*var res = new Array();
+		for (var i = 0; i < robotNum; ++ i)
 		{
 			getData(i+"x");
 			getData(i+"y");
@@ -221,9 +212,9 @@ $(function () {
 			for (var j = init; j < len; ++ j)
 				res[i].push([dataset[i+"x"].data[j], dataset[i+"y"].data[j]]);
 		}
-		plot[plotNum].setData([res[0], res[1]]);
-		plot[plotNum].draw();
-		setTimeout(update, 100);
+		plot[robotNum].setData([res[0], res[1]]);
+		plot[robotNum].draw();*/
+		setTimeout(update, 300);
 	}
     update();
 });
