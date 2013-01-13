@@ -1,0 +1,17 @@
+<html>
+	<head>
+		<title>Autolab Demonstration</title>
+	</head>
+	<body>
+		<h1 align='center'>Autolab Demonstration</h1>
+		<p align='center'>
+			<br />
+			<a href='./dynamic-all.html'>dynamic plot</a>
+			<a href='./dataparser/index.html'>data parser</a>
+			<br />
+			<a href='./static.html'>static plot</a>
+			<br />
+			<a href='./trajectory.html'>trajectory plot (test)</a>
+		</p>
+	</body>
+</html>
