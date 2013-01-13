@@ -74,7 +74,7 @@ $(function () {
     //var heading = new jxLine(pos, next, new jxPen(new jxColor("red"),'1px'));
     //heading.draw(gr);
     
-    var test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
+    var test1 = new jxArc(pos, 50, 10, 0, 180, new jxPen(new jxColor("red"),'1px'));
     test1.draw(gr);
     
     var line = [];
@@ -92,7 +92,7 @@ $(function () {
 		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 		body.draw(gr);
 		test1.remove();
-		test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
+		test1 = new jxArc(pos, 130, 100, 0, 180, new jxPen(new jxColor("red"),'1px'));
 		test1.draw(gr);
 		for (var i = 0; i < data.length - 1; ++i)
 		{

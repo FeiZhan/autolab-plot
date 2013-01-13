@@ -5,8 +5,8 @@
 	<body>
 		<h1 align='center'>Autolab Demonstration</h1>
 		<p align='center'>
-			<a href='./dynamic-all.html'>dynamic plot</a>
 			<br />
+			<a href='./dynamic-all.html'>dynamic plot</a>
 			<a href='./dataparser/index.html'>data parser</a>
 			<br />
 			<a href='./static.html'>static plot</a>

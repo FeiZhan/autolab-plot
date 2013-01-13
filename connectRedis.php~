@@ -24,9 +24,9 @@ for ($i = 0; $i < $PLOT_NUM * 5; ++ $i)
 		echo " ";
 		continue;
 	}
-	else if ($i == 4)
+	else if ($i == 3)
 	{
-		echo $cb18[3];
+		echo $cb18[2];
 		echo " ";
 		continue;
 	}

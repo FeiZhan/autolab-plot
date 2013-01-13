@@ -12,11 +12,11 @@
 		<tr>
 			<td><div id="placeholdert" style="width:1200px;height:900px;"></div></td>
 			<td>
-				<p>cb01:
+				<p>cb01
 					<span id="0x">x</span>
 					<span id="0y">y</span>
 				</p>
-				<p>cb02:
+				<p>cb02
 					<span id="1x">x</span>
 					<span id="1y">y</span>
 				</p>
