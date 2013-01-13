@@ -1,0 +1,53 @@
+<?php
+// by fzhan@Autolab
+// show and select all data files to generate plots by GNUPlot.
+
+// generate a list of file names
+function reachdir($dir)
+{
+	if(is_dir($dir))
+	{
+		if($df=opendir($dir))
+		{
+			while(($file=readdir($df))!==false)
+			{
+				if(!in_array($file, array(".",".."))
+					&& ! substr_compare($file, '.txt', strlen($file) - 4))
+				{
+					if(is_dir($root."/".$file))
+					{
+						reachdir($root."/".$file);
+						echo "<p>dir-><span style='color:#FF0000;'>".$file."</span><br/></p>";
+					} else
+					{
+						echo "<p>".$file."<br/></p>";
+					}
+				}
+			}
+			closedir($df);
+		} else
+		{
+			echo "<p>cannot open".getcwd()."</p>";
+		}
+	} else
+	{
+		echo "<p>".getcwd()." is not a dir</p>";
+	}
+}
+?>
+<html>
+	<head>
+		<title>data parser for Autolab</title>
+	</head>
+	<body>
+		<h1 align='center'>Data Parser for Autolab</h1>
+		<form name="select_file" action="print_data.php" method="get">
+			Select a file name to parse:
+			<input type="text" name="filename" />
+			<input type="submit" value="Submit" />
+		</form>
+		<hr />
+		<h3 align='center'>A list of data files is below.</h3>
+		<?php reachdir('data'); ?>
+	</body>
+</html>
