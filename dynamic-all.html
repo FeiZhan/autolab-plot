@@ -87,6 +87,38 @@ $(function () {
 			}
 		}
 	}
+	var gridNum = 10, energy = [];
+	for (var i = 0; i < gridNum * gridNum; ++ i)
+	{
+		energy[i] = 0;
+	}
+	// call PHP to calculate the energy in order to plot the energy grids
+	function calEnergy()
+	{
+		var xmlhttp;
+		if (window.XMLHttpRequest)
+		{// code for IE7+, Firefox, Chrome, Opera, Safari
+			xmlhttp=new XMLHttpRequest();
+		}
+		else
+		{// code for IE6, IE5
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange=function()
+		{
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{
+				var ret = xmlhttp.responseText.split(" ");
+				document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
+				for (var i = 0; i < ret.length - 1; ++ i)
+				{
+					energy[i] = parseFloat(ret[i]);
+				}
+			}
+		}
+		xmlhttp.open("GET","calEnergy.php",true);
+		xmlhttp.send();
+	}
 	// connect to Redis to retrieve data asynchronously
 	function connectRedis()
 	{
@@ -181,20 +213,27 @@ $(function () {
 		});
 	}
     // draw the graphics by jsDraw2DX
-    var size = [1200, 900], enlarge = 8, gridNum = 10;
+    var size = [1200, 900], enlarge = 8;
     var gr = new jxGraphics(document.getElementById("graphics"));
     var boundary = new jxRect(new jxPoint(0,0), size[0], size[1], new jxPen(new jxColor("grey"),'1px'));
     boundary.draw(gr);
-    var grid = [];
-    for (var i = 0; i < gridNum; ++ i)
-    {
-		grid[i] = new jxLine(new jxPoint(0, i * size[1] / gridNum), new jxPoint(size[0], i * size[1] / gridNum), new jxPen(new jxColor("grey"),'1px'));
-		grid[i].draw(gr);
-		grid[i + gridNum] = new jxLine(new jxPoint(i * size[0] / gridNum, 0), new jxPoint(i * size[0] / gridNum, size[1]), new jxPen(new jxColor("grey"),'1px'));
-		grid[i + gridNum].draw(gr);
+	var grid = [], color = [];
+    calEnergy();
+	for (var i = 0; i < gridNum; ++ i)
+	{
+		for (var j = 0; j < gridNum; ++ j)
+		{
+			color[(i+1)*(j+1)-1] = Math.round(energy[(i+1)*(j+1)-1]);
+			color[(i+1)*(j+1)-1] = (255 - color[(i+1)*(j+1)-1] * color[(i+1)*(j+1)-1]).toString(16);
+			if (color[(i+1)*(j+1)-1].length == 1)
+			{
+				color[(i+1)*(j+1)-1] = "0" + color[(i+1)*(j+1)-1];
+			}
+			color[(i+1)*(j+1)-1] = "#FF" + color[(i+1)*(j+1)-1] + color[(i+1)*(j+1)-1];
+			grid[(i+1)*(j+1)-1] = new jxRect(new jxPoint(i * size[0] / gridNum, j * size[1] / gridNum), size[0] / gridNum, size[1] / gridNum, new jxPen(new jxColor("grey"),'1px'), new jxBrush(new jxColor(color[(i+1)*(j+1)-1])));
+			grid[(i+1)*(j+1)-1].draw(gr);
+		}
 	}
-    var energy = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
-    energy.draw(gr);
 	var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
 	home.draw(gr);
 	var patch1 = new jxCircle(new jxPoint(size[0]-30, size[1]-30), 20, new jxPen(new jxColor("green"),'1px'));
@@ -215,7 +254,7 @@ $(function () {
 		body[i].draw(gr);
 		for (var j = 0; j < trajLen; ++ j)
 		{
-			line.push( new jxLine(new jxPoint(0, 0), new jxPoint(0, 0), new jxPen(new jxColor("pink"),'1px')) );
+			line.push( new jxLine(new jxPoint(0, 0), new jxPoint(0, 0), new jxPen(new jxColor("red"),'1px')) );
 			line[(i+1)*(j+1)-1].draw(gr);
 		}
 		//var test1 = new jxArc(pos, 100, 180, -90, 90, new jxPen(new jxColor("red"),'1px'));
@@ -235,6 +274,26 @@ $(function () {
 			}
 			plot[i].setData( data );
 			plot[i].draw();
+		}
+		// update the colors of the energy grids
+		//calEnergy();
+		for (var i = 0; i < gridNum; ++ i)
+		{
+			for (var j = 0; j < gridNum; ++ j)
+			{
+				color[(i+1)*(j+1)-1] = Math.round(energy[(i+1)*(j+1)-1]);
+				color[(i+1)*(j+1)-1] = 255 - color[(i+1)*(j+1)-1] * color[(i+1)*(j+1)-1];
+				if (color[(i+1)*(j+1)-1] < 0)
+					color[(i+1)*(j+1)-1] = 0;
+				color[(i+1)*(j+1)-1] = color[(i+1)*(j+1)-1].toString(16);
+				if (color[(i+1)*(j+1)-1].length == 1)
+				{
+					color[(i+1)*(j+1)-1] = "0" + color[(i+1)*(j+1)-1];
+				}
+				color[(i+1)*(j+1)-1] = "#FF" + color[(i+1)*(j+1)-1] + color[(i+1)*(j+1)-1];
+				grid[(i+1)*(j+1)-1] = new jxRect(new jxPoint(i * size[0] / gridNum, j * size[1] / gridNum), size[0] / gridNum, size[1] / gridNum, new jxPen(new jxColor("grey"),'1px'), new jxBrush(new jxColor(color[(i+1)*(j+1)-1])));
+				grid[(i+1)*(j+1)-1].draw(gr);
+			}
 		}
 		// update the trajectory by jsDraw2DXvar
 		for (var i = 0; i < robotNum; ++ i)
@@ -259,7 +318,7 @@ $(function () {
 						new jxPoint(
 						dataset[robotName[i]+"x"].data[dataset[robotName[i]+"x"].data.length - 2 - j][1] * enlarge,
 						dataset[robotName[i]+"y"].data[dataset[robotName[i]+"y"].data.length - 2 - j][1] * enlarge ),
-						new jxPen(new jxColor("pink"),'1px'));
+						new jxPen(new jxColor("red"),'1px'));
 					line[(i+1)*(j+1)-1].draw(gr);
 				}
 			}

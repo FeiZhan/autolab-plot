@@ -51,7 +51,7 @@ function robotValid($robot)
 }
 
 $single_server = array(
-    'host'	=>	'localhost',//'192.168.1.120',
+    'host'	=>	'192.168.1.120',
     'port'	=>	6379
 );
 $client = new Predis\Client($single_server);
