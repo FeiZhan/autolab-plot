@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The map for Autolab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      html, body, #map_canvas {
+        margin: 0;
+        padding: 0;
+        height: 80%;
+        width: 80%;
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script>
+//document.getElementById("debug").innerHTML = 'debug: ' + c.length;
+var map;
+var lab = [49.276802, -122.914913], OFFSET = .0005;
+var c = [[lab[0], lab[1]]], new_c = [lab[0], lab[1]];
+var coordinates = [new google.maps.LatLng(new_c[0], new_c[1])];
+function robot_move()
+{
+	new_c = [new_c[0] + Math.random() * OFFSET - OFFSET / 2, new_c[1] + Math.random() * OFFSET - OFFSET / 2];
+	c.push(new_c);
+	coordinates.push(new google.maps.LatLng(new_c[0], new_c[1]));
+	var rpath = new google.maps.Polyline({
+	  path: coordinates,
+	  strokeColor: 'red',
+	  strokeOpacity: 1.0,
+	  strokeWeight: 1
+	});
+	rpath.setMap(map);
+	window.setTimeout(robot_move, 1000);
+}
+function initialize() {
+	var mapOptions = {
+		zoom: 17,
+		center: new google.maps.LatLng(lab[0], lab[1]),
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById('map_canvas'),
+		mapOptions);
+	var marker = new google.maps.Marker({
+		position: new google.maps.LatLng(lab[0], lab[1]),
+		map: map,
+		title: 'Autonomy Lab at Simon Fraser University'
+	});
+	robot_move();
+}
+google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
+  </head>
+  <body>
+    <div id="map_canvas"></div>
+	<p id="debug">debug: </p>
+  </body>
+</html>
