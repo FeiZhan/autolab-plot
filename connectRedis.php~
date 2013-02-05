@@ -83,6 +83,6 @@ foreach ($ROBOT as $i)
 	$data = "1";
 	$ret = $client->get($i);
 	saveData($i, $ret." ".$data);
-	echo $ret.", ";
+	echo $ret." ";
 }
 ?>

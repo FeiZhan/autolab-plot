@@ -1,0 +1,13 @@
+<?php
+$ENERGY_PATH = "log/energy-".date('Y-m-j').".log";
+//$new_x, $new_y, $new_e;
+//$energy_map;
+if (array_key_exists($new_x." ".$new_y, $energy_map))
+{
+	$energy_map[$new_x." ".$new_y] += $new_e;
+} else
+{
+	$energy_map[$new_x." ".$new_y] = $new_e;
+}
+echo $new_x." ".$new_y." ".$new_e;
+?>

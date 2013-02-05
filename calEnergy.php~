@@ -60,14 +60,14 @@ for ($i = 0; $i < count($energy); ++ $i)
 	$energy[$i] /= $sum;
 	if ($energy[$i] > 0.2)
 	{
-		$color[$i] = $colorLevel + 3;
+		$color[$i] = $colorLevel + 2;
 	}
 	else if ($energy[$i] <= 0)
 	{
 		$color[$i] = 0;
 	} else
 	{
-		$color[$i] = round($energy[$i] / ((0.2 - 0) / $colorLevel)) + 3;
+		$color[$i] = round($energy[$i] / ((0.2 - 0) / $colorLevel)) + 2;
 	}
 }
 

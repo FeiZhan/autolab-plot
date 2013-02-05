@@ -15,7 +15,7 @@
 				<div id="graphics" style="overflow:hidden;position:relative;width:1200px;height:900px;"></div>
 			</td>
 			<td style="width:10%;height:10%;">
-				<form name="input" action="clear_energy.php" method="get">
+				<form name="input" action="html_form_action.asp" method="get">
 					<input type="submit" value="clear" />
 				</form>
 				<p>cb18:</p>
