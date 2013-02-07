@@ -149,7 +149,7 @@ function connect_redis()
 			</tr>
 			<tr align="center">
 				<form id="form04">
-					<td><input type="text" name="key" value="last_energy_time" /></td>
+					<td><input type="text" name="key" value="last_time_time" /></td>
 					<td><input type="text" name="value" value="@@@clear" size="100%" /></td>
 					<td><input type="button" value="submit" onClick="send_key(this.form)" /></td>
 				</form>

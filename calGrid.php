@@ -56,13 +56,14 @@ for ($i = 0; $i < count($ROBOT); ++ $i)
 	default:
 		$value = 0;
 	}
-	if (array_key_exists($new_x." ".$new_y, $map))
+	if (array_key_exists($x." ".$y, $map))
 	{
 		$map[$x." ".$y] += $value;
 	} else
 	{
 		$map[$x." ".$y] = $value;
 	}
+	$last_frame[$i] = $now;
 }
 switch($_GET["type"])
 {
@@ -76,26 +77,35 @@ default:
 }
 $sum = array_sum($map);
 $last = "";
+$centerx = intval($_GET["centerx"]);
+$centery = intval($_GET["centery"]);
 foreach ($map as $key => $i)
 {
 	$last .= $key." ".$i." ";
-	$i = $i / $sum;
-	if ($i < 0.01)
+	$pos = explode(" ", $key);
+	$x = intval($pos[0]);
+	$y = intval($pos[1]);
+	if ($pos[0] > $centerx + 10 || $pos[0] < $centerx - 10 || $pos[1] > $centery + 10 || $pos[1] < $centery - 10)
 	{
-		$color = 230;
+		continue;
 	}
-	else if ($i > 0.3)
+	$tmp = $i / $sum;
+	if ($tmp < 0.01)
+	{
+		$color = 250;
+	}
+	else if ($tmp > 0.1)
 	{
 		$color = 50;
 	} else
 	{
-		$color = round((230 - 50) * ($i - 0.01) / (0.3 - 0.01) + 50);
+		$color = round(250 + ($tmp - 0.01) / (0.1 - 0.01) * (50 - 250));
 	}
 	if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
 	{
 		$old_color[$key] = $color;
 	}
-	echo $key." ".$color." ";
+	echo $key." ".$color." ".$i." ";
 }
 switch($_GET["type"])
 {

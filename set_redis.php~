@@ -3,7 +3,7 @@
 require __DIR__.'/predis/autoload.php';
 
 $LAB = array(49.276802, -122.914913);
-$OFFSET = 0.0005;
+$OFFSET = .001;
 $begin = microtime(true);
 $single_server = array(
     'host'	=>	$_GET["host"],
@@ -27,8 +27,8 @@ function random_robot($client_value)
 		$c[1] = 49.276802;
 		$c[2] = -122.914913;
 	}
-	$x = floatval($c[1]) + rand(0, 10000) / 10000 * 0.0005 - 0.0005 / 2;
-	$y = floatval($c[2]) + rand(0, 10000) / 10000 * 0.0005 - 0.0005 / 2;
+	$x = floatval($c[1]) + rand(-10000, 10000) / 10000 * 0.0005;
+	$y = floatval($c[2]) + rand(-10000, 10000) / 10000 * 0.0005;
 	return ($last_time+1)." ".$x." ".$y." ".(rand(0, 10000) / 100)." ".(rand(0, 10000) / 100);
 }
 
@@ -50,7 +50,7 @@ for($i = 0; $i < 10; ++ $i)
 			switch($code)
 			{
 			case "clear":
-				$value = clear_value();
+				$value = "";
 				break;
 			case "random_value":
 				$value = random_value();
