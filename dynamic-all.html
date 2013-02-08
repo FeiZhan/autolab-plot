@@ -2,13 +2,18 @@
 <html>
  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Plots for Autolab</title>
+    <title>Dynamic Plots for All Robots in Autolab</title>
     <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
 	<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
  </head>
 	<body>
-	<h3 id="title" align="center">Plots for all robots</h3>
+		<table border="0" width="100%" align="center">
+			<tr>
+				<td width="30"><img src="logo.png" alt="logo"></td>
+				<td><h1 align='center'>Dynamic Plots for All Robots in Autolab</h1></td>
+			</tr>
+		</table>
 	<table border="0" style="width:100%;height:100%;">
 		<tr>
 			<td>
@@ -67,7 +72,8 @@
 <script type="text/javascript">
 // by fzhan@Autolab
 // dynamic figures for all the robots and trajectories.
-$(function () {
+$(function ()
+{
 	var totalPoints = 80, trajLen = 5, robotName = ["cb18", "cb01", "pioneer01"], label = ["valid", "x", "y", "speed", "voltage", "current"];
 	var robotNum = 3, data_ret = [];
 	for (var i = 0; i < robotNum * label.length; ++ i)
@@ -146,7 +152,7 @@ $(function () {
 				}
 			}
 		}
-		xmlhttp.open("GET","connectRedis.php",true);
+		xmlhttp.open("GET","get_robot_data.php",true);
 		xmlhttp.send();
 	}
 	// get data from connectRedis()
@@ -328,7 +334,6 @@ $(function () {
 				}
 			}
 		}
-
 		setTimeout(update, 1000);
 	}
     update();

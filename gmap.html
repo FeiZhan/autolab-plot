@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>The map for Autolab</title>
+		<title>Gmap for Autolab</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 		<meta charset="utf-8">
 		<style>
-			html, body, #map_canvas {
+			html, body, #map_canvas
+			{
 				margin: 0;
 				padding: 0;
 				height: 90%;
@@ -14,10 +15,13 @@
 		</style>
 		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
 		<script>
-//document.getElementById("debug").innerHTML = 'debug: ' + c.length;
+// by fzhan@Autolab
+// trajectories and grid plots for robots on a google map
+
 var TIME_OUT = 1000, LAB = [49.276802, -122.914913], GRID_SIZE = .001, GRID_NUM = 20, TRAJ_NUM = 20, ROBOT_NUM = 10;
 var map, last_coord = new Array(), coord = new Array();
 var rpath = new Array(), grid = {}, view_type = "basic", redis_ret = {}, robot = new Array(), grid_value = {}, follow = "none";
+// clear grid data from the map
 function clear_grid()
 {
 	for (key in grid)
@@ -25,14 +29,17 @@ function clear_grid()
 		grid[key].setMap(null);
 	}
 }
+// transform the coordinate into grid position
 function coord_to_grid(x, y)
 {
 	return [Math.round((x - LAB[0] - GRID_SIZE/2) / GRID_SIZE), Math.round((y - LAB[1] - GRID_SIZE/2) / GRID_SIZE)];
 }
+// let the map follow a robot
 function follow_robot(form)
 {
 	follow = form.follow.value;
 }
+// change view
 function change_view(form)
 {
 	if (form.view.value == view_type)
@@ -40,6 +47,7 @@ function change_view(form)
 	clear_grid();
 	view_type = form.view.value;
 }
+// pop up a info window on a grid
 function info_wnd(event)
 {
 	var grid_pos = coord_to_grid(event.latLng.lat(), event.latLng.lng());
@@ -60,7 +68,6 @@ function info_wnd(event)
 }
 function connectRedis(file, cmd)
 {
-//document.getElementById("debug").innerHTML = 'debug: ' + file;
 	var xmlhttp;
 	if (window.XMLHttpRequest)
 	{// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -74,23 +81,30 @@ function connectRedis(file, cmd)
 	{
 		if (xmlhttp.readyState==4 && xmlhttp.status==200)
 		{
+document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
+			// save the data into corresponding position in redis_ret
 			redis_ret[file] = xmlhttp.responseText;
 		}
 	}
 	xmlhttp.open("GET",file + ".php?" + cmd, true);
 	xmlhttp.send();
+	// if there is no key in redis_ret, create one
 	if (! ((file) in redis_ret))
 	{
 		redis_ret[file] = "";
 	}
 }
+// generate the trajectory
 function robot_move()
 {
-	connectRedis("connectRedis", "");
-	var ret = redis_ret["connectRedis"].split(", ");
+	connectRedis("get_robot_data", "");
+	// separate the data into different robots
+	var ret = redis_ret["get_robot_data"].split(", ");
 	for (var i = 0; i < ret.length; ++ i)
 	{
+		// separate the data into different values
 		var j = ret[i].split(" ");
+		// the 1st is x, and the 2nd is y
 		var x = parseFloat(j[1]), y = parseFloat(j[2]);
 		if (x == undefined || isNaN(x) || y == undefined || isNaN(y))
 			continue;
@@ -101,12 +115,14 @@ function robot_move()
 		{
 			continue;
 		}
+		// keep the length of path no longer than a threshold
 		while (rpath[i].length >= TRAJ_NUM)
 		{
 			rpath[i][0].setMap(null);
 			rpath[i].splice(0, 1);
 		}
 		var color, weight;
+		// select if it is colorful
 		if (view_type == "colorful")
 		{
 			color = "#" + Math.floor(Math.random()*16777215).toString(16);
@@ -135,15 +151,18 @@ function robot_move()
 		}));
 		if (follow == ""+i)
 		{
+			// let the map follow a robot
 			map.panTo(robot[i].getPosition());
 		}
 	}
 	window.setTimeout(robot_move, TIME_OUT);
 }
+// generate grids on energy or time distribution
 function cal_grid()
 {
 	if (view_type == "energy" || view_type == "time")
 	{
+		// simply clear all grids in every iteration
 		clear_grid();
 		var grid_size = GRID_SIZE * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
 		var center_pos = coord_to_grid(map.getCenter().lat(), map.getCenter().lng());
@@ -154,6 +173,7 @@ document.getElementById("debug").innerHTML = 'debug: ' + redis_ret[file];
 		var dist, min;
 		for (var i = 0; i + 3 < ret.length; i += 4)
 		{
+			// the format of the data is "x y color value"
 			var x = ret[i];//Math.round(Math.random() * GRID_NUM - GRID_NUM / 2);
 			var y = ret[i+1];
 			var color = parseInt(ret[i+2]).toString(16);//Math.round(Math.random() * 160).toString(16);
@@ -186,17 +206,21 @@ document.getElementById("debug").innerHTML = 'debug: ' + redis_ret[file];
 					new google.maps.LatLng(LAB[0] + x * grid_size + grid_size, LAB[1] + y * grid_size + grid_size))
 			});
 			google.maps.event.clearListeners(grid[x + " " + y], 'click');
+			// add the info window into the grid
 			google.maps.event.addListener(grid[x + " " + y], 'click', function(event)
 			{
 				info_wnd(event);
 			});
+			// save the grid value in order to be displayed on the info window
 			grid_value[x + " " + y] = ret[i+3];
 		}
 	}
 	window.setTimeout(cal_grid, TIME_OUT);
 }
-function initialize() {
-	var mapOptions = {
+function initialize()
+{
+	var mapOptions =
+	{
 		zoom: 17,
 		center: new google.maps.LatLng(LAB[0], LAB[1]),
 		mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -224,6 +248,12 @@ google.maps.event.addDomListener(window, 'load', initialize);
 		</script>
 	</head>
 	<body>
+		<table border="0" width="100%" align="center">
+			<tr>
+				<td width="30"><img src="logo.png" alt="logo"></td>
+				<td><h1 align='center'>Gmap for Autolab Demonstration</h1></td>
+			</tr>
+		</table>
 		<div id="map_canvas"></div>
 		<table border="0" align="center" width="40%" >
 			<tr>

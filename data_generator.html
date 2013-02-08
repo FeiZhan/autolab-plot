@@ -3,7 +3,12 @@
 	<head>
 		<title>Data Generator for Autolab</title>
 		<script type="text/javascript">
+// by fzhan@Autolab
+// a generic webpage to generate various data in Redis in order to facilitate developing other websites
+
+//[todo] drag them out of the program
 var host = "192.168.1.120", port = "6379", rate = "1000", ret, key = new Array(), value = new Array(), form_num = 1;
+// change the parameters of Radis
 function change_radis(form)
 {
 	host = form.host.value;
@@ -11,6 +16,7 @@ function change_radis(form)
 	rate = form.rate.value;
 	document.getElementById("debug").innerHTML = 'debug: ' + host + ", " + port + ", " + rate;
 }
+// test the duration of a transmission with PHP and Redis
 function delay_test()
 {
 	if (typeof ret == "string" && ret.substr(0, 4) == "time")
@@ -21,6 +27,7 @@ function delay_test()
 	}
 	setTimeout(delay_test, 500);
 }
+// add a table for key input
 function add_key(form)
 {
 	//form_num += 1;
@@ -48,6 +55,7 @@ function add_key(form)
 			'</tr>';*/
 	document.getElementById("debug").innerHTML = 'debug: ' + form_str;
 }
+// set the key and value to be transmitted
 function send_key(form)
 {
 	var id = parseInt(form.id.substr(4, 2));
@@ -55,6 +63,7 @@ function send_key(form)
 	value[id] = form.value.value;
 	document.getElementById("debug").innerHTML = 'debug: ' + id + ", " + key[id] + ", " + value[id];
 }
+// clear the value
 function clear_key(form)
 {
 	var id = parseInt(form.id.substr(4, 2));
@@ -62,6 +71,7 @@ function clear_key(form)
 	value[id] = "";
 	document.getElementById("debug").innerHTML = 'debug: ' + id + ", " + key[id];
 }
+// connect redis to change the keys
 function connect_redis()
 {
 	var xmlhttp;
@@ -91,14 +101,19 @@ function connect_redis()
 		}
 	}
 	//document.getElementById("debug").innerHTML = 'debug: ' + data;
-	xmlhttp.open("GET", "set_redis.php?" + data, true);
+	xmlhttp.open("GET", "data_generator.php?" + data, true);
 	xmlhttp.send();
 	setTimeout(connect_redis, rate);
 }
 		</script>
 	</head>
 	<body>
-		<h2 align="center">Data Generator for Autolab</h2>
+		<table border="0" width="100%" align="center">
+			<tr>
+				<td width="30"><img src="logo.png" alt="logo"></td>
+				<td><h1 align='center'>Data Generator for Autolab</h1></td>
+			</tr>
+		</table>
 		<table border="0" align="center">
 			<tr align="center">
 				<form>
@@ -122,7 +137,7 @@ function connect_redis()
 			<tr align="center">
 				<form id="form00">
 					<td><input type="text" name="key" value="cb18" /></td>
-					<td><input type="text" name="value" value="@@@random_robot" size="100%" /></td>
+					<td><input type="text" name="value" value="@@@field_robot" size="100%" /></td>
 					<td><input type="button" value="submit" onClick="send_key(this.form)" /></td>
 				</form>
 			</tr>
@@ -188,7 +203,7 @@ function connect_redis()
 			backup:<input type="text" size="100%" />
 		</form>
 		<br />
-		<table border="1" align="center" width="60%">
+		<table border="1" align="center" width="80%">
 			<tr align="center">
 				<td width="20%">code</td>
 				<td width="80%">meaning</td>
@@ -203,7 +218,11 @@ function connect_redis()
 			</tr>
 			<tr align="center">
 				<td>@@@random_robot</td>
-				<td>A set of random numbers discribing a robot as "time x y voltage current".</td>
+				<td>A set of random numbers discribing a robot as "time x y voltage current". The boundary of x and y is [0, 100]</td>
+			</tr>
+			<tr align="center">
+				<td>@@@field_robot</td>
+				<td>A set of random numbers discribing a robot as "time x y voltage current", with unconstrained x and y representing a field robot moving out of the lab.</td>
 			</tr>
 			<tr align="center">
 				<td>@@@-</td>

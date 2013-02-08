@@ -1,5 +1,8 @@
 <?php
+// by fzhan@Autolab
+// obtain data from Redis, calculate energy or time grids for google maps, and transmit them to html
 require __DIR__.'/predis/autoload.php';
+//[todo] grab out of programs
 $LAB = array(49.276802, -122.914913);
 $ROBOT = array("cb18", "cb01", "pi01");
 $single_server = array(
@@ -7,6 +10,7 @@ $single_server = array(
     'port'	=>	6379
 );
 $client = new Predis\Client($single_server);
+// obtain old data from Redis
 switch($_GET["type"])
 {
 case "energy":
@@ -24,11 +28,13 @@ default:
 	$last_color = "";
 	$last = "";
 }
+// generate a map for old data
 $map = array();
 for($i = 0; $i + 2 < count($last); $i += 3)
 {
 	$map[$last[$i]." ".$last[$i+1]] = floatval($last[$i+2]);
 }
+//[todo] generate an array of old colors in order to compare with current colors
 $old_color = array();
 for($i = 0; $i + 2 < count($last_color); $i += 3)
 {
@@ -36,15 +42,19 @@ for($i = 0; $i + 2 < count($last_color); $i += 3)
 }
 for ($i = 0; $i < count($ROBOT); ++ $i)
 {
+	//obtain robot data from Redis
 	$r = explode(" ", $client->get($ROBOT[$i]));
 	$now = intval($r[0]);
 	if (count($last_frame) < count($ROBOT) || $last_frame[$i] >= $now)
 	{
+		// there is no data, or the robot did not move
 		$last_frame[$i] = $now;
 		continue;
 	}
+	// get the grid position from the geo position
 	$x = round((floatval($r[1]) - $LAB[0] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
 	$y = round((floatval($r[2]) - $LAB[1] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
+	// calculate the value of energy or time
 	switch($_GET["type"])
 	{
 	case "energy":
@@ -56,6 +66,7 @@ for ($i = 0; $i < count($ROBOT); ++ $i)
 	default:
 		$value = 0;
 	}
+	// add with old data if there exist old data
 	if (array_key_exists($x." ".$y, $map))
 	{
 		$map[$x." ".$y] += $value;
@@ -65,6 +76,7 @@ for ($i = 0; $i < count($ROBOT); ++ $i)
 	}
 	$last_frame[$i] = $now;
 }
+// save frame data back to Redis
 switch($_GET["type"])
 {
 case "energy":
@@ -87,8 +99,10 @@ foreach ($map as $key => $i)
 	$y = intval($pos[1]);
 	if ($pos[0] > $centerx + 10 || $pos[0] < $centerx - 10 || $pos[1] > $centery + 10 || $pos[1] < $centery - 10)
 	{
+		// this grid is out of the field of view, ignore it
 		continue;
 	}
+	// calculate the color value of the grid
 	$tmp = $i / $sum;
 	if ($tmp < 0.01)
 	{
@@ -101,12 +115,14 @@ foreach ($map as $key => $i)
 	{
 		$color = round(250 + ($tmp - 0.01) / (0.1 - 0.01) * (50 - 250));
 	}
+	//[todo] if the color does not change, we do not need to transmit it
 	if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
 	{
 		$old_color[$key] = $color;
 	}
 	echo $key." ".$color." ".$i." ";
 }
+// save back to Redis
 switch($_GET["type"])
 {
 case "energy":

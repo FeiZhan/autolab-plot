@@ -31,7 +31,8 @@
 <script type="text/javascript">
 // by fzhan@Autolab
 // dynamic figures for one robot.
-$(function () {
+$(function ()
+{
     var totalPoints = 300, plotNum = 1, trajLen = 20, trajPlotNum = 1;
     var labels = ["voltage", "current", "speed"];
     var robotName = ["cb01", "cb02", "pioneer01"];
@@ -84,7 +85,7 @@ $(function () {
 				document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
 			}
 		}
-		xmlhttp.open("GET","connectRedis.php",true);
+		xmlhttp.open("GET","get_robot_data.php",true);
 		xmlhttp.send();
 	}
     function getData(label) {

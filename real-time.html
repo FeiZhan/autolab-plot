@@ -8,7 +8,7 @@
  </head>
 	<body>
 	<h2 id="title" align='center'>A plot</h1>
-    <div id="placeholder" style="width:1200px;height:600px;"></div>
+	<div id="placeholder" style="width:1200px;height:600px;"></div>
 	<p id="choices">legend: </p>
 	<form name="robot">select a robot:
 	<select name="select_robot" onChange="location.replace(this.options[this.selectedIndex].value)">
@@ -31,11 +31,12 @@
 	<p id="debug">debug: </p>
 <script type="text/javascript">
 // by fzhan@Autolab
-// real-time plot of a robot.
-$(function () {
-    var robot = "<?php echo $_GET["robot"];?>";
+// a simple real-time plot
+$(function ()
+{
+	var robot = "<?php echo $_GET["robot"];?>";
 	var curve = "<?php echo $_GET["curve"];?>";
-    var totalPoints = 300;
+	var totalPoints = 300;
     var dataset = {
 		"v": {
 			label: "voltage",
@@ -54,9 +55,9 @@ $(function () {
 		}
 	}
 	var colorset = ["Blue", "Red", "Black"];
-	// modify the title to add the curve name
 	if (curve != undefined && curve != '')
 	{
+		// modify the title to add the curve name
 		$("#title").append(" of " + dataset[curve].label);
 		var colorset = [dataset[curve].color];
 	}
@@ -78,7 +79,7 @@ $(function () {
         $("#choices").append('<label for="id' + key + '" style="color:' + val.color + '">' + val.label + ' <a href="real-time.html?curve=' + key + '">(click)</a>; </label>');
     });
     $("#choices").append('<a href="real-time.html">click for all plots</a>');
-    $("#debug").append(connectRedis('s'));
+    $("#debug").append("debug: " + connectRedis('s'));
     var redis_ret = 0;
     // connect to redis to retrieve data
 	function connectRedis()
@@ -100,11 +101,12 @@ $(function () {
 			document.getElementById("debug").innerHTML = xmlhttp.responseText;
 			}
 		  }
-		xmlhttp.open("GET","connectRedis.php",true);
+		xmlhttp.open("GET","get_robot_data.php",true);
 		xmlhttp.send();
 	}
 	// generate random data
-    function getRandomData(label) {
+    function getRandomData(label)
+    {
 		if (dataset[label] == undefined)
 			return [0, 0];
         if (dataset[label].data.length > 0)

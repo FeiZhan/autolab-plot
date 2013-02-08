@@ -1,7 +1,9 @@
 <?php
 // by fzhan@Autolab
+// a generic program to set various data into Redis
 require __DIR__.'/predis/autoload.php';
 
+//[todo] drag them out of the program
 $LAB = array(49.276802, -122.914913);
 $OFFSET = .001;
 $begin = microtime(true);
@@ -10,12 +12,19 @@ $single_server = array(
     'port'	=>	$_GET["port"]
 );
 $client = new Predis\Client($single_server);
-
+// generate a random value
 function random_value()
 {
 	return rand(0, 10000) / 100;
 }
-function random_robot($client_value)
+function random_robot()
+{
+	$x = rand(0, 10000) / 100;
+	$y = rand(0, 10000) / 100;
+	return round(rand(0, 100))." ".$x." ".$y." ".(rand(0, 10000) / 100)." ".(rand(0, 10000) / 100);
+}
+// generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.
+function field_robot($client_value)
 {
 	$c = explode(" ", $client_value);
 	// the time stamp of last cycle
@@ -31,7 +40,7 @@ function random_robot($client_value)
 	$y = floatval($c[2]) + rand(-10000, 10000) / 10000 * .001;
 	return ($last_time+1)." ".$x." ".$y." ".(rand(0, 10000) / 100)." ".(rand(0, 10000) / 100);
 }
-
+// test the duration to communicate with Redis
 $client->set("delay_test", $_GET["time"]);
 echo "time ".$client->get("delay_test").", ";
 //echo round(microtime(true) * 1000 - $_GET["time"]);
@@ -56,7 +65,10 @@ for($i = 0; $i < 10; ++ $i)
 				$value = random_value();
 				break;
 			case "random_robot":
-				$value = random_robot($client->get($_GET["key".$i]));
+				$value = random_robot();
+				break;
+			case "field_robot":
+				$value = field_robot($client->get($_GET["key".$i]));
 				break;
 			default:
 				// undefined code
