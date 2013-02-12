@@ -66,5 +66,9 @@ If you use "data generator" (the first link in the front page), put "cb18" (with
 =========================
 Suggestion
 --------------
-The website is still under construction. If you find bugs, or feel hard to understand the description with my poor English, please contact me [fzhan at sfu dot ca]. I apologize for any inconvience.
+The website is still under construction. If you find bugs, feel hard to understand the description with my poor English, or need new features, please contact me [fzhan at sfu dot ca]. I apologize for any inconvience.
 The website is not open enough. If you don't like data representing voltage or current, you can put your own data there, but the title won't change. If you don't like the names of the robots, you can also change the program.
+=========================
+Installation
+--------------
+For Ubuntu, install apache4 and PHP first, then drag the entire directory into the localhost directory in your own computer (default as /var/www/).
