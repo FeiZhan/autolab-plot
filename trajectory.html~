@@ -43,7 +43,7 @@ $(function ()
 document.getElementById("debug").innerHTML = 'return: ' + xmlhttp.responseText;
 				ret = xmlhttp.responseText;
 				var tmp = ret.split(", ");
-				tmp = tmp[0];
+				tmp = tmp[1];
 				tmp = tmp.split(" ");
 				pos[0] = parseFloat(tmp[1]);
 				pos[1] = parseFloat(tmp[2]);
