@@ -41,7 +41,7 @@
 			</tr>
 			<tr align="center">
 				<td><a href='./gmap.html'>google map</a></td>
-				<td>trajectory plots on google map with data retrieved from Redis.</td>
+				<td>trajectory plots with data retrieved from Redis.</td>
 			</tr>
 		</table>
 	</body>
