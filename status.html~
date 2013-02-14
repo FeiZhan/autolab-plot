@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Status in Autolab</title>
+		<script>
+// by fzhan@Autolab
+var redis_ret, db_status = new Array();
+function change_data(raw_data)
+{
+	var data = raw_data.split(", ");
+	for (var i = 0; i < data.length; ++ i)
+	{
+		var key_value = data[i].split(" ");
+		if (key_value[0] == "")
+		{
+			continue;
+		}
+		var flag = false;
+		for (var j = 0; j < db_status.length; ++ j)
+		{
+			if (key_value[0] == db_status[j])
+			{
+				document.getElementById(key_value[0]).innerHTML = key_value[1];
+				flag = true;
+				break;
+			}
+		}
+		if (false == flag)
+		{
+			db_status.push(key_value[0]);
+			document.getElementById("table").innerHTML += 
+				'<tr>' +
+					'<td><p>' + key_value[0] + '</p></td>' +
+					'<td><p id="' + key_value[0] + '"></p></td>' +
+				'</tr>';
+		}
+	}
+}
+function connectRedis()
+{
+	var xmlhttp;
+	if (window.XMLHttpRequest)
+	{// code for IE7+, Firefox, Chrome, Opera, Safari
+		xmlhttp=new XMLHttpRequest();
+	}
+	else
+	{// code for IE6, IE5
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
+			change_data(xmlhttp.responseText);
+		}
+	}
+	xmlhttp.open("GET","status.php", true);
+	xmlhttp.send();
+	setTimeout(connectRedis, 300);
+}
+		</script>
+	</head>
+	<body>
+		<table border="0" width="100%" align="center">
+			<tr>
+				<td width="30"><img src="logo.png" alt="logo"></td>
+				<td><h1 align='center'>Status in Autolab</h1></td>
+			</tr>
+		</table>
+		<table border="1" width="60%" align="center" id="table">
+		</table>
+		<p id="debug">debug: </p>
+		<script type="text/javascript">
+connectRedis();
+		</script>
+	</body>
+</html>

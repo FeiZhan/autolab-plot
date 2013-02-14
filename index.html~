@@ -12,6 +12,15 @@
 		</table>
 		<table border="1" align="center" width="80%">
 			<tr align="center">
+				<td width="20%"><a href='./status.html'>status</a></td>
+				<td>
+Generate various data in order to facilitate experimenting and testing robots.
+It can insert different data into Redis in our lab with specified keys.
+You can change the host and port of Redis, frame rate of setting, key and value of your own data.
+If wanting random data or clear existing data, you can use the codes listed in the webpage. Simply copy and paste them into the value zone of your key, and press submit.
+				</td>
+			</tr>
+			<tr align="center">
 				<td width="20%"><a href='./data_generator.html'>data generator</a></td>
 				<td>
 Generate various data in order to facilitate experimenting and testing robots.
@@ -68,7 +77,7 @@ If you use "data generator" (the first link in the front page), put "cb18" (with
 				</td>
 			</tr>
 		</table>
-		<ul align="center">Suggestion:
+		<ul>Suggestion:
 		<li>The website is still under construction. If you find bugs, or feel hard to understand the description with my poor English, please contact me [fzhan at sfu dot ca]. I apologize for any inconvience.</li>
 		<li>The website is not open enough. If you don't like data representing voltage or current, you can put your own data there, but the title won't change. If you don't like the names of the robots, you can also change the program.</li>
 		</ul>

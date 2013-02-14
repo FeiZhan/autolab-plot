@@ -109,7 +109,7 @@ $(function ()
 	}
 	function test_saferange(value)
 	{
-document.getElementById("debug").innerHTML = 'debug: ' + value;
+document.getElementById("debug").innerHTML = 'debug: ' + sr_min;
 		if (saferange && (value < sr_min || value > sr_max))
 		{
 			document.getElementById("safe").innerHTML = 'DANGER !!!';

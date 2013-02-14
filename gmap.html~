@@ -154,7 +154,7 @@ function robot_move()
 						fillColor: '#F00',
 						fillOpacity: 1
 					},
-					offset: '50%'
+					offset: '0%'
 				}];
 				break;
 			case 4:
@@ -174,7 +174,7 @@ function robot_move()
 						strokeColor: '#00F',
 						 rotation: 0
 					},
-					offset: '50%'
+					offset: '100%'
 				}];
 				break;
 			default:
