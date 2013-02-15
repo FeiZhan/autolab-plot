@@ -14,10 +14,7 @@
 			<tr align="center">
 				<td width="20%"><a href='./status.html'>status</a></td>
 				<td>
-Generate various data in order to facilitate experimenting and testing robots.
-It can insert different data into Redis in our lab with specified keys.
-You can change the host and port of Redis, frame rate of setting, key and value of your own data.
-If wanting random data or clear existing data, you can use the codes listed in the webpage. Simply copy and paste them into the value zone of your key, and press submit.
+Display the server's status.
 				</td>
 			</tr>
 			<tr align="center">

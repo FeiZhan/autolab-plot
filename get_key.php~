@@ -1,0 +1,6 @@
+<?php
+// by fzhan@Autolab
+// connect with Redis to retrieve general data
+require __DIR__.'/connect_redis.php';
+echo $client->get($_GET["key"]);
+?>

@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<title>Status in Autolab</title>
+		<script src="parameter.js"></script>
 		<script>
 // by fzhan@Autolab
 var redis_ret, db_status = new Array();
@@ -29,35 +30,18 @@ function change_data(raw_data)
 		{
 			db_status.push(key_value[0]);
 			document.getElementById("table").innerHTML += 
-				'<tr>' +
+				'<tr align="center">' +
 					'<td><p>' + key_value[0] + '</p></td>' +
 					'<td><p id="' + key_value[0] + '"></p></td>' +
 				'</tr>';
 		}
 	}
 }
-function connectRedis()
+function periodic_connect()
 {
-	var xmlhttp;
-	if (window.XMLHttpRequest)
-	{// code for IE7+, Firefox, Chrome, Opera, Safari
-		xmlhttp=new XMLHttpRequest();
-	}
-	else
-	{// code for IE6, IE5
-		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-	}
-	xmlhttp.onreadystatechange=function()
-	{
-		if (xmlhttp.readyState==4 && xmlhttp.status==200)
-		{
-document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
-			change_data(xmlhttp.responseText);
-		}
-	}
-	xmlhttp.open("GET","status.php", true);
-	xmlhttp.send();
-	setTimeout(connectRedis, 300);
+	connect_redis("status", "method=status");
+	change_data(SERVER_RET);
+	setTimeout(periodic_connect, 300);
 }
 		</script>
 	</head>
@@ -72,7 +56,7 @@ document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
 		</table>
 		<p id="debug">debug: </p>
 		<script type="text/javascript">
-connectRedis();
+periodic_connect();
 		</script>
 	</body>
 </html>

@@ -5,6 +5,7 @@
     <title>Plots for Autolab</title>
     <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script src="parameter.js"></script>
 		<script type="text/javascript">
 var saferange = false, sr_min = 0, sr_max = 100;
 function cb_saferange(element)
@@ -54,7 +55,6 @@ $(function ()
 {
     var totalPoints = 300, plotNum = 1, trajLen = 20, trajPlotNum = 1;
     var labels = ["voltage", "current", "speed"];
-    var robotName = ["cb01", "cb02", "pioneer01"];
     var robot = "<?php echo $_GET["robot"];?>";
 	var curve = "<?php echo $_GET["curve"];?>";
 	if (robot != undefined && robot != '')
@@ -80,10 +80,10 @@ $(function ()
 		"3v": {label: labels[0], data: []},
 		"3c": {label: labels[1], data: []},
 		"3s": {label: labels[2], data: []},
-		"0x": {label: robotName[0], data: []},
-		"0y": {label: robotName[0], data: []},
-		"1x": {label: robotName[1], data: []},
-		"1y": {label: robotName[1], data: []}, }
+		"0x": {label: ROBOT_NAME[0], data: []},
+		"0y": {label: ROBOT_NAME[0], data: []},
+		"1x": {label: ROBOT_NAME[1], data: []},
+		"1y": {label: ROBOT_NAME[1], data: []}, }
     var redis_ret = 0;
 	function connectRedis()
 	{

@@ -7,6 +7,7 @@
 		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
 		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
+		<script src="parameter.js"></script>
 	</head>
 	<body>
 		<table border="0" width="100%" align="center">
@@ -24,34 +25,6 @@
 $(function ()
 {
 	var ret = "", pos = [0, 0];
-	// connect with redis
-	function connect_redis()
-	{
-		var xmlhttp;
-		if (window.XMLHttpRequest)
-		{// code for IE7+, Firefox, Chrome, Opera, Safari
-			xmlhttp=new XMLHttpRequest();
-		}
-		else
-		{// code for IE6, IE5
-			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-		}
-		xmlhttp.onreadystatechange=function()
-		{
-			if (xmlhttp.readyState==4 && xmlhttp.status==200)
-			{
-document.getElementById("debug").innerHTML = 'return: ' + xmlhttp.responseText;
-				ret = xmlhttp.responseText;
-				var tmp = ret.split(", ");
-				tmp = tmp[0];
-				tmp = tmp.split(" ");
-				pos[0] = parseFloat(tmp[1]);
-				pos[1] = parseFloat(tmp[2]);
-			}
-		}
-		xmlhttp.open("GET", "get_robot_data.php", true);
-		xmlhttp.send();
-	}
 	var data = [], data2 = [], totalPoints = 30, pt = [];
 	function getRandomData()
 	{
@@ -129,7 +102,12 @@ document.getElementById("debug").innerHTML = 'return: ' + xmlhttp.responseText;
 	// update plots periodically
 	function update()
 	{
-		connect_redis();
+		connect_redis("get_robot_data", "");
+		var tmp = SERVER_RET.split(", ");
+		tmp = tmp[0];
+		tmp = tmp.split(" ");
+		pos[0] = parseFloat(tmp[1]);
+		pos[1] = parseFloat(tmp[2]);
 		// update flot
 		plot.setData([ getRandomData() ]);
 		plot.draw();

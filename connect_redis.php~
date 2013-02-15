@@ -1,21 +1,13 @@
 <?php
 // by fzhan@Autolab
+// connect with Redis to retrieve general data
 require __DIR__.'/predis/autoload.php';
-$HOST = "192.168.1.120";
-$PORT = "6379";
-$SECOND_HOST = "localhost";
-$LAB = array(49.276802, -122.914913);
-$ROBOT_NAME = array("cb18", "cb01", "pi01");
-$server = array(
+require __DIR__.'/parameter.php';
+$single_server = array(
     'host'	=>	$HOST,
     'port'	=>	$PORT
 );
-$client = new Predis\Client($server);
-$second_server = array(
-    'host'	=>	$SECOND_HOST,
-    'port'	=>	$PORT
-);
-$second_client = new Predis\Client($second_server);
+$client = new Predis\Client($single_server);
 
 function get_key()
 {
@@ -31,10 +23,6 @@ function status()
 	{
 		echo $key." ".$value.", ";
 	}
-}
-function backup()
-{
-	//
 }
 function get_robot_data()
 {

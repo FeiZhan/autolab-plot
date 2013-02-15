@@ -3,6 +3,9 @@
 // obtain data from Redis, calculate energy or time grids for google maps, and transmit them to html
 require __DIR__.'/predis/autoload.php';
 require __DIR__.'/parameter.php';
+//[todo] grab out of programs
+$LAB = array(49.276802, -122.914913);
+$ROBOT = array("cb18", "cb01", "pi01");
 $single_server = array(
     'host'	=>	$HOST,
     'port'	=>	$PORT

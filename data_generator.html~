@@ -19,9 +19,9 @@ function change_radis(form)
 // test the duration of a transmission with PHP and Redis
 function delay_test()
 {
-	if (typeof SERVER_RET == "string" && SERVER_RET.substr(0, 4) == "time")
+	if (typeof PHP_RETURN == "string" && PHP_RETURN.substr(0, 4) == "time")
 	{
-		var ret_time = parseInt(SERVER_RET.substr(4));
+		var ret_time = parseInt(PHP_RETURN.substr(4));
 		var d = new Date();
 		document.getElementById("delay").innerHTML = 'delay(ms): ' + (d.getTime() - ret_time);
 	}

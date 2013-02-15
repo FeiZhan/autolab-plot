@@ -19,7 +19,7 @@ function send_key(form)
 	key = form.key.value;
 	if (key != undefined && key != "")
 	{
-		connect_redis("call_method", "method=get_key&key=" + key);
+		connect_redis("call_method", "key=" + key);
 	}
 }
 $(function()

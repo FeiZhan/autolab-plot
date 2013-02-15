@@ -132,7 +132,7 @@ $(function ()
 	// get data from connect_redis()
     function updateData()
     {
-		connect_redis("call_method", "method=get_robot_data");
+		connect_redis("call_method", "get_robot_data");
 		var ret = SERVER_RET.split(" ");
 		for (var i = 0; i < ret.length - 1; ++ i)
 		{

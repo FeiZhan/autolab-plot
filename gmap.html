@@ -14,11 +14,12 @@
 			}
 		</style>
 		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+		<script src="parameter.js"></script>
 		<script>
 // by fzhan@Autolab
 // trajectories and grid plots for robots on a google map
 
-var TIME_OUT = 1000, LAB = [49.276802, -122.914913], GRID_SIZE = .001, GRID_NUM = 20, TRAJ_NUM = 20, ROBOT_NUM = 10;
+var TIME_OUT = 1000, GRID_SIZE = .001, GRID_NUM = 20, TRAJ_NUM = 20, ROBOT_NUM = 10;
 var map, last_coord = new Array(), coord = new Array();
 var rpath = new Array(), grid = {}, view_type = "basic", redis_ret = {}, robot = new Array(), grid_value = {}, follow = "none";
 // clear grid data from the map

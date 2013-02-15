@@ -3,6 +3,9 @@
 // a generic program to set various data into Redis
 require __DIR__.'/predis/autoload.php';
 require __DIR__.'/parameter.php';
+
+//[todo] drag them out of the program
+$LAB = array(49.276802, -122.914913);
 $OFFSET = .001;
 $begin = microtime(true);
 $single_server = array(

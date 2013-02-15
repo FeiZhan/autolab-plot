@@ -1,5 +1,5 @@
 <?php
-//require __DIR__.'/parameter.php';
+require __DIR__.'/parameter.php';
 $gridNum = 10;
 $ENERGY_PATH = "log/energy-".date('Y-m-j').".log";
 if (file_exists($ENERGY_PATH) && filesize($ENERGY_PATH) > 200)
@@ -20,7 +20,7 @@ if (file_exists($ENERGY_PATH) && filesize($ENERGY_PATH) > 200)
 		$energy[$i] = 0;
 	}
 }
-$ROBOT_NAME = array("shit1", "shit2", "shit3");//array("cb18", "cb01", "pioneer01");
+//$ROBOT_NAME = array("shit1", "shit2", "shit3");//array("cb18", "cb01", "pioneer01");
 $SIZE = array(1200, 900);
 $new_frame = 0;
 for ($i = 0; $i < count($ROBOT_NAME); ++ $i)
