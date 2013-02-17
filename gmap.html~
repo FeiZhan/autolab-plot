@@ -281,6 +281,7 @@ function initialize()
 	};
 	map = new google.maps.Map(document.getElementById('map_canvas'),
 		mapOptions);
+	document.getElementById("debug").innerHTML = typeof(map);
 	var marker = new google.maps.Marker({
 		position: new google.maps.LatLng(LAB[0], LAB[1]),
 		map: map,
@@ -291,8 +292,8 @@ function initialize()
 		coord.push([LAB[0], LAB[1]]);
 		rpath.push(new Array());
 	}
-	robot_move();
-	cal_grid();
+	//robot_move();
+	//cal_grid();
 	google.maps.event.addListener(map, 'zoom_changed', function()
 	{
 		clear_grid();

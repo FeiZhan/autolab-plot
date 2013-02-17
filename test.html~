@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Data Generator for Autolab</title>
+		<script src="parameter.js"></script>
+		<script type="text/javascript">
+		</script>
+	</head>
+	<body>
+		<div id="RedisServer"></div>
+		<p id="debug">debug: </p>
+		<script type="text/javascript">
+var conf = new Object();
+conf.rate = 1123;
+var rs = new RedisServer();
+show();
+		</script>
+	</body>
+</html>

@@ -1,6 +1,6 @@
 var host = "192.168.1.120", port = "6379", second_host = "localhost";
 var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01"];
-var PHP_RETURN = "";
+var SERVER_RET = "", RET_ARRAY = new Object();
 function connect_redis(file, cmd)
 {
 	var xmlhttp;
@@ -17,9 +17,53 @@ function connect_redis(file, cmd)
 		if (xmlhttp.readyState==4 && xmlhttp.status==200)
 		{
 document.getElementById("debug").innerHTML = 'return(' + file + ' ' + cmd + '): ' + xmlhttp.responseText;
-			PHP_RETURN = xmlhttp.responseText;
+			SERVER_RET = xmlhttp.responseText;
+			RET_ARRAY[file] = xmlhttp.responseText;
 		}
 	}
 	xmlhttp.open("GET",file + ".php?" + cmd, true);
 	xmlhttp.send();
+	// if there is no key in redis_ret, create one
+	if (! ((file) in RET_ARRAY))
+	{
+		RET_ARRAY[file] = "";
+	}
+}
+var RedisServer = function (conf)
+{
+	this.canvas = "RedisServer";
+	this.border = 0;
+	this.align = "center";
+	this.host = host;
+	this.port = port;
+	this.rate = 1000;
+	this.debug = "debug";
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === 'undefined')
+		{
+			continue;
+		}
+		this[key] = conf[key];
+document.getElementById(this.debug).innerHTML = "debug: " + key;
+	}
+	this.change_redis = function ()
+	{
+document.getElementById("debug").innerHTML = "debug: " + this.form.host.value + " " + this.form.port.value + " " + this.form.rate.value;
+	}
+	this.show = function ()
+	{
+		document.getElementById(this.canvas).innerHTML = 
+			'<table border="' + this.border + '" align="' + this.align + '">' +
+				'<tr align="' + this.align + '">' +
+					'<form>' +
+						'<td>host<input type="text" name="host" value="' + this.host + '" /></td>' +
+						'<td>port<input type="text" name="port" value="' + this.port + '" /></td>' +
+						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + this.rate + '" /></td>' +
+						'<td><input type="button" value="submit" /></td>' +
+					'</form>' +
+				'</tr>' +
+			'</table>';
+		document.getElementById(this.canvas).getElementsByTagName("input")[3].onclick = this.change_redis;
+	}
 }
