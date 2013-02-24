@@ -38,12 +38,12 @@ for($i = 0; $i + 2 < count($last_color); $i += 3)
 {
 	$old_color[$last_color[$i]." ".$last_color[$i+1]] = floatval($last_color[$i+2]);
 }
-for ($i = 0; $i < count($ROBOT); ++ $i)
+for ($i = 0; $i < count($ROBOT_NAME); ++ $i)
 {
 	//obtain robot data from Redis
-	$r = explode(" ", $client->get($ROBOT[$i]));
+	$r = explode(" ", $client->get($ROBOT_NAME[$i]));
 	$now = intval($r[0]);
-	if (count($last_frame) < count($ROBOT) || $last_frame[$i] >= $now)
+	if (count($last_frame) < count($ROBOT_NAME) || $last_frame[$i] >= $now)
 	{
 		// there is no data, or the robot did not move
 		$last_frame[$i] = $now;

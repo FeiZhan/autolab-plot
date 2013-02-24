@@ -1,21 +1,11 @@
 <?php
 // by fzhan@Autolab
 require __DIR__.'/predis/autoload.php';
+$LAB = array(49.276802, -122.914913);
+$ROBOT_NAME = array("cb18", "cb01", "pi01");
 $HOST = "192.168.1.120";
 $PORT = "6379";
 $SECOND_HOST = "localhost";
-$LAB = array(49.276802, -122.914913);
-$ROBOT_NAME = array("cb18", "cb01", "pi01");
-$server = array(
-    'host'	=>	$HOST,
-    'port'	=>	$PORT
-);
-$client = new Predis\Client($server);
-$second_server = array(
-    'host'	=>	$SECOND_HOST,
-    'port'	=>	$PORT
-);
-$second_client = new Predis\Client($second_server);
 
 function get_key()
 {
@@ -32,9 +22,13 @@ function status()
 		echo $key." ".$value.", ";
 	}
 }
-function backup()
+// cannot put bak_server variables here
+function backup($key, $data)
 {
-	//
+	global $bak_client;
+	// if change - with _, it does not work.
+	$bak_client->rpush($key."-bak", $data);
+	//echo $bak_client->llen($key."-bak"); // test if it works
 }
 function get_robot_data()
 {
@@ -44,9 +38,7 @@ function get_robot_data()
 	{
 		$data = "1";
 		$ret = $client->get($i);
-		//$file = fopen("log/".$key."-".date('Y-m-j').".log","a");
-		//fwrite($file, date('G:i:s')." ".$retval."\n");
-		//fclose($file);
+		//backup($i, $ret);
 		echo $ret.", ";
 	}
 }
@@ -76,7 +68,7 @@ function cal_energy()
 			$energy[$i] = 0;
 		}
 	}
-	$ROBOT_NAME = array("shit1", "shit2", "shit3");//array("cb18", "cb01", "pioneer01");
+	//$ROBOT_NAME = array("shit1", "shit2", "shit3");//array("cb18", "cb01", "pioneer01");
 	$SIZE = array(1200, 900);
 	$new_frame = 0;
 	for ($i = 0; $i < count($ROBOT_NAME); ++ $i)
@@ -138,7 +130,7 @@ function cal_energy()
 // obtain data from Redis, calculate energy or time grids for google maps, and transmit them to html
 function cal_grid()
 {
-	global $client;
+	global $client, $ROBOT_NAME;
 	// obtain old data from Redis
 	switch($_GET["type"])
 	{
@@ -169,12 +161,12 @@ function cal_grid()
 	{
 		$old_color[$last_color[$i]." ".$last_color[$i+1]] = floatval($last_color[$i+2]);
 	}
-	for ($i = 0; $i < count($ROBOT); ++ $i)
+	for ($i = 0; $i < count($ROBOT_NAME); ++ $i)
 	{
 		//obtain robot data from Redis
-		$r = explode(" ", $client->get($ROBOT[$i]));
+		$r = explode(" ", $client->get($ROBOT_NAME[$i]));
 		$now = intval($r[0]);
-		if (count($last_frame) < count($ROBOT) || $last_frame[$i] >= $now)
+		if (count($last_frame) < count($ROBOT_NAME) || $last_frame[$i] >= $now)
 		{
 			// there is no data, or the robot did not move
 			$last_frame[$i] = $now;
@@ -269,6 +261,7 @@ function call_method($method)
 {
 	if(is_null($method) || "" == $method || ! function_exists ($method))
 	{
+		echo "@error wrong method";
 		return;
 	}
 	$method();

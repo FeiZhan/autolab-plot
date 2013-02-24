@@ -1,6 +1,3 @@
-//<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
-//<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
-
 var host = "192.168.1.120", port = "6379", second_host = "localhost";
 var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01"];
 var SERVER_RET = "", RET_ARRAY = new Object();
@@ -30,6 +27,58 @@ document.getElementById("debug").innerHTML = 'return(' + file + ' ' + cmd + '): 
 	if (! ((file) in RET_ARRAY))
 	{
 		RET_ARRAY[file] = "";
+	}
+}
+var phpComm = function (conf)
+{
+	this.receive = "";
+	this.file = "";
+	this.cmd = "";
+	this.debug = "debug";
+	this.rec_text = "receive";
+	this.send_time = "";
+	this.rec_time = "";
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === 'undefined')
+		{
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			//document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
+	this.commPhp = function (file, cmd)
+	{
+		var self = this;
+		var xmlhttp;
+		if (window.XMLHttpRequest)
+		{
+			// code for IE7+, Firefox, Chrome, Opera, Safari
+			xmlhttp = new XMLHttpRequest();
+		}
+		else
+		{
+			// code for IE6, IE5
+			xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange = function ()
+		{
+			if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
+			{
+				this.rec_time = new Date().getTime();
+				self.receive = xmlhttp.responseText;
+				if ("" != self.rec_text)
+				{
+					document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
+				}
+			}
+		}
+		xmlhttp.open("GET", file + ".php?" + cmd, true);
+		xmlhttp.send();
+		this.send_time = new Date().getTime();
 	}
 }
 var labLogo = function (conf)
@@ -221,36 +270,55 @@ var keySetter = function (conf)
 		add_submit_callback();
 	}
 }
-var staticPlot = function ()
+var staticPlot = function (conf)
 {
 	this.canvas = "staticPlot";
+	this.placeholder = "placeholder";
 	this.width = "100%";
 	this.height = "300px";
 	this.align = "center";
 	this.key = "";
 	this.debug = "debug";
-	this.update = $(function()
+	this.timeout = 300;
+	this.pc = new phpComm();
+	this.option = {
+		series: {
+			lines: {show: true},
+			points: {show: true}
+		},
+		crosshair: {mode: "x"},
+		grid: {
+			show: true,
+			hoverable: true,
+			autoHighlight: false
+		}};
+	for (var key in conf)
 	{
-		var option = {
-			series: {
-				lines: {show: true},
-				points: {show: true}
-			},
-			crosshair: {mode: "x"},
-			grid: {
-				show: true,
-				hoverable: true,
-				autoHighlight: false
-			}};
-		plot = $.plot("#placeholder", [[]], option);
-		// update the plot periodically in order to plot the data from Redis
-		function update()
+		if (typeof(this[key]) === 'undefined')
 		{
-			if (SERVER_RET != last_ret)
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
+	this.last_ret = "";
+	this.update = function()
+	{
+		var plot = $.plot("#" + this.placeholder, [[]], this.option);
+		var self = this;
+		// update the plot periodically in order to plot the data from Redis
+		function plot_update()
+		{
+			SERVER_RET = self.pc.receive;
+			if (SERVER_RET != self.last_ret)
 			{
 				// we have new data from Redis
-				last_ret = SERVER_RET;
-				var tmp = SERVER_RET.split(" "), data = new Array();
+				this.last_ret = SERVER_RET;
+				var tmp = SERVER_RET.split(" ");
+				var data = new Array();
 				for (var i = 0; i < tmp.length; ++ i)
 				{
 					var tmp2 = parseFloat(tmp[i]);
@@ -260,63 +328,98 @@ var staticPlot = function ()
 					}
 					data.push([i, tmp2]);
 				}
-				$.plot("#placeholder", [data], option);
+				$.plot("#" + self.placeholder, [data], self.option);
 			}
-			setTimeout(update, 300);
+			setTimeout(plot_update, self.timeout);
 		}
-		update();
-	});
+		plot_update();
+	};
 	this.show = function ()
 	{
-		document.getElementById(this.canvas).innerHTML =
-			'<div id="placeholder" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
+		var html =
+			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
 			'<div align="' + this.align + '"><form>' +
 				'key:<input type="text" name="key" value="' + this.key + '" />' +
 				'<input type="button" value="submit" />' +
 			'</form></div>';
+		document.getElementById(this.canvas).innerHTML = html;
 		var self = this;
 		document.getElementById(this.canvas).getElementsByTagName("input")[1].onclick = function ()
 		{
 			var key = this.form.key.value;
 			if (key != undefined && key != "")
 			{
-				connect_redis("call_method", "method=get_key&key=" + key);
+				//connect_redis("call_method", "method=get_key&key=" + key);
+				self.pc.commPhp("call_method", "method=get_key&key=" + key);
 			}
 		}
-		//this.update();
+		this.update();
 	}
 }
-var trajPlot1 = function ()
+var trajPlot1 = function (conf)
 {
 	this.canvas = "trajPlot1";
-	this.update = $(function ()
+	this.placeholder = "placeholder";
+	this.width = "600px";
+	this.height = "500px";
+	this.timeout = 300;
+	this.total_points = 30;
+	this.min = 0;
+	this.max = 100;
+	this.debug = "debug";
+	this.option = {
+		series: {
+			shadowSize: 0,
+			lines: {show: true},
+			points: {show: true}},
+			yaxis: { min: 0, max: 100 },
+			xaxis: { min: 0, max: 100 },
+			crosshair: {mode: "x"},
+			grid: {
+				show: true,
+				hoverable: true,
+				autoHighlight: false
+	}};
+	for (var key in conf)
 	{
-		var ret = "", pos = [0, 0];
-		var data = [], data2 = [], totalPoints = 30, pt = [];
-		function getRandomData()
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
+	this.update = function ()
+	{
+		var pos = [0, 0], data = [], data2 = [];
+		var self = this;
+		function getData()
 		{
 			if (data.length > 0)
 				data = data.slice(1);
-			while (data.length < totalPoints)
+			while (data.length < self.total_points)
 			{
 				//var prev = data.length > 0 ? data[data.length - 1] : 50;
 				var y = pos[0];//prev + Math.random() * 10 - 5;
-				if (y < 0)
-					y = 0;
-				if (y > 100)
-					y = 100;
+				if (y < self.min)
+					y = self.min;
+				if (y > self.max)
+					y = self.max;
 				data.push(y);
 			}
 			if (data2.length > 0)
 				data2 = data2.slice(1);
-			while (data2.length < totalPoints)
+			while (data2.length < self.total_points)
 			{
-				var prev = data2.length > 0 ? data2[data2.length - 1] : 0;
+				//var prev = data2.length > 0 ? data2[data2.length - 1] : 0;
 				var y = pos[1];//prev + Math.random() * 10 - 5;
-				if (y < 0)
-					y = 0;
-				if (y > 100)
-					y = 100;
+				if (y < self.min)
+					y = self.min;
+				if (y > self.max)
+					y = self.max;
 				data2.push(y);
 			}
 			// combine data and data2, and plot them in one plot, so the trajectory is obtained.
@@ -327,23 +430,9 @@ var trajPlot1 = function ()
 			}
 			return res;
 		}
-		var options = {
-			series: {
-				shadowSize: 0,
-				lines: {show: true},
-				points: {show: true}},
-				yaxis: { min: 0, max: 100 },
-				xaxis: { min: 0, max: 100 },
-				crosshair: {mode: "x"},
-				grid: {
-					show: true,
-					hoverable: true,
-					autoHighlight: false
-			}
-		};
-		var plot = $.plot($("#placeholder"), [ getRandomData() ], options);
+		var plot = $.plot("#" + this.placeholder, [ getData() ], this.option);
 		// update plots periodically
-		function update()
+		function plot_update()
 		{
 			connect_redis("get_robot_data", "");
 			var tmp = SERVER_RET.split(", ");
@@ -351,50 +440,74 @@ var trajPlot1 = function ()
 			tmp = tmp.split(" ");
 			pos[0] = parseFloat(tmp[1]);
 			pos[1] = parseFloat(tmp[2]);
-			// update flot
-			plot.setData([ getRandomData() ]);
+			plot.setData([ getData() ]);
 			plot.draw();
-			setTimeout(update, 200);
+			setTimeout(plot_update, self.timeout);
 		}
-		update();
-	});
+		plot_update();
+	};
 	this.show = function ()
 	{
-		document.getElementById(this.canvas).innerHTML =
-			'<div id="placeholder" style="width:600px;height:500px;"></div>';
+		var html =
+			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>';
+		document.getElementById(this.canvas).innerHTML = html;
+		var self = this;
+		this.update();
 	}
 }
-var trajPlot2 = function ()
+var trajPlot2 = function (conf)
 {
 	this.canvas = "trajPlot2";
+	this.placeholder = "graphics";
+	this.overflow = "hidden";
+	this.position = "relative";
+	this.width = "1000px";
+	this.height = "1000px";
+	this.total_points = 30;
+	this.timeout = 300;
+	this.min = 0;
+	this.max = 100;
+	this.debug = "debug";
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
 	this.update = function ()
 	{
-		var ret = "", pos = [0, 0];
-		var data = [], data2 = [], totalPoints = 30, pt = [];
-		function getRandomData()
+		var pos = [0, 0], data = [], data2 = [];
+		var self = this;
+		function getData()
 		{
 			if (data.length > 0)
 				data = data.slice(1);
-			while (data.length < totalPoints)
+			while (data.length < self.total_points)
 			{
 				//var prev = data.length > 0 ? data[data.length - 1] : 50;
 				var y = pos[0];//prev + Math.random() * 10 - 5;
-				if (y < 0)
-					y = 0;
-				if (y > 100)
-					y = 100;
+				if (y < self.min)
+					y = self.min;
+				if (y > self.max)
+					y = self.max;
 				data.push(y);
 			}
 			if (data2.length > 0)
 				data2 = data2.slice(1);
-			while (data2.length < totalPoints)
+			while (data2.length < self.total_points)
 			{
 				var prev = data2.length > 0 ? data2[data2.length - 1] : 0;
 				var y = pos[1];//prev + Math.random() * 10 - 5;
-				if (y < 0)
-					y = 0;
-				if (y > 100)
-					y = 100;
+				if (y < self.min)
+					y = self.min;
+				if (y > self.max)
+					y = self.max;
 				data2.push(y);
 			}
 			// combine data and data2, and plot them in one plot, so the trajectory is obtained.
@@ -405,22 +518,8 @@ var trajPlot2 = function ()
 			}
 			return res;
 		}
-		var options = {
-			series: {
-				shadowSize: 0,
-				lines: {show: true},
-				points: {show: true}},
-				yaxis: { min: 0, max: 100 },
-				xaxis: { min: 0, max: 100 },
-				crosshair: {mode: "x"},
-				grid: {
-					show: true,
-					hoverable: true,
-					autoHighlight: false
-			}
-		};
 		// draw the static graphics by jsDraw2DX
-		var gr = new jxGraphics(document.getElementById("graphics"));
+		var gr = new jxGraphics(document.getElementById(this.placeholder));
 		var boundary = new jxRect(new jxPoint(0,0), 600, 600, new jxPen(new jxColor("grey"),'1px'));
 		boundary.draw(gr);
 		var grid = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
@@ -432,6 +531,7 @@ var trajPlot2 = function ()
 		var patch1 = new jxCircle(new jxPoint(30, 570), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
 		// draw the initial graphics of dynamic objects
+		getData();
 		var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
 		var body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 		body.draw(gr);
@@ -443,8 +543,7 @@ var trajPlot2 = function ()
 			line.push( new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px')) );
 			line[i].draw(gr);
 		}
-		// update plots periodically
-		function update()
+		function plot_update()
 		{
 			connect_redis("get_robot_data", "");
 			var tmp = SERVER_RET.split(", ");
@@ -452,7 +551,7 @@ var trajPlot2 = function ()
 			tmp = tmp.split(" ");
 			pos[0] = parseFloat(tmp[1]);
 			pos[1] = parseFloat(tmp[2]);
-			// update the trajectory by jsDraw2DX
+			getData();
 			pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
 			body.remove();
 			body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
@@ -466,81 +565,70 @@ var trajPlot2 = function ()
 				line[i] = new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px'));
 				line[i].draw(gr);
 			}
-			setTimeout(update, 200);
+			setTimeout(plot_update, self.timeout);
 		}
-		update();
+		plot_update();
 	};
 	this.show = function ()
 	{
-		document.getElementById(this.canvas).innerHTML =
-			'<div id="graphics" style="overflow:hidden;position:relative;width:1000px;height:1000px;"></div>';
+		var html =
+			'<div id="' + this.placeholder + '" style="overflow:' + this.overflow + ';position:' + this.position + ';width:' + this.width + ';height:' + this.height + ';"></div>';
+		document.getElementById(this.canvas).innerHTML = html;
 		this.update();
 	}
 }
-var dynamicPlot = function ()
+var dynamicPlot = function (conf)
 {
 	this.canvas = "dynamicPlot";
-	this.border = 0;
+	this.border = 1;
 	this.table_width = "100%";
 	this.table_height = "100%";
-	this.placehoder = "placeholder1";
+	this.placeholder = "placeholder";
 	this.width = "1300px";
 	this.height = "400px";
-	this.update = $(function ()
+	this.text_width = "100px";
+	this.debug = "debug";
+	this.total_points = 100;
+	this.timeout = 300;
+	this.option = {
+		// drawing is faster without shadows
+		series: {shadowSize: 0, lines: {show: true} },
+		yaxis: { min: 0, max: 100 },
+		xaxis: { min: -this.total_points + 1, max: 0},
+		grid: {show: true},
+	};
+	for (var key in conf)
 	{
-		var totalPoints = 80, trajLen = 5, label = ["valid", "x", "y", "speed", "voltage", "current"];
-		var robotNum = 3, data_ret = [];
-		for (var i = 0; i < robotNum * label.length; ++ i)
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
+	this.update = function ()
+	{
+		var label = ["valid", "x", "y", "speed", "voltage", "current"], data_ret = [];
+		var self = this;
+		for (var i = 0; i < label.length; ++ i)
 		{
 			data_ret[i] = 0;
 		}
-		var dataset = {};
+		var dataset = new Object();
 		// generate the list of datasets by robot names and labels
-		for (var i = 0; i < robotNum; ++ i)
+		for (var j = 0; j < label.length; ++ j)
 		{
-			for (var j = 0; j < label.length; ++ j)
+			if (label[j] == "valid")
 			{
-				if (label[j] == "valid")
-				{
-					// set the default valid as true
-					dataset[ROBOT_NAME[i] + label[j]] = {label: label[j], data: 1};
-				} else
-				{
-					dataset[ROBOT_NAME[i] + label[j]] = {label: label[j], data: []};
-				}
-			}
-		}
-		var gridNum = 10, energy = [];
-		for (var i = 0; i < gridNum * gridNum; ++ i)
-		{
-			energy[i] = 0;
-		}
-		// call PHP to calculate the energy in order to plot the energy grids
-		function calEnergy()
-		{
-			var xmlhttp;
-			if (window.XMLHttpRequest)
-			{// code for IE7+, Firefox, Chrome, Opera, Safari
-				xmlhttp=new XMLHttpRequest();
-			}
-			else
-			{// code for IE6, IE5
-				xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-			}
-			xmlhttp.onreadystatechange=function()
+				// set the default valid as true
+				dataset[label[j]] = {label: label[j], data: 1};
+			} else
 			{
-				if (xmlhttp.readyState==4 && xmlhttp.status==200)
-				{
-					var ret = xmlhttp.responseText.split(" ");
-					//document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
-					for (var i = 0; i < ret.length - 1; ++ i)
-					{
-						energy[i] = parseFloat(ret[i]);
-					}
-				}
+				dataset[label[j]] = {label: label[j], data: []};
 			}
-			xmlhttp.open("GET","calEnergy.php",true);
-			xmlhttp.send();
 		}
 		// get data from connect_redis()
 		function updateData()
@@ -558,16 +646,9 @@ var dynamicPlot = function ()
 				if (cnt % label.length == 0)
 				{
 					dataset[i].data = (data_ret[cnt] != 0);
-					if (dataset[i].data)
-					{
-						document.getElementById("r"+ Math.floor((cnt+1)/(label.length-1)) + 0).innerHTML = dataset[i].label + ": true";
-					} else
-					{
-						document.getElementById("r"+ Math.floor((cnt+1)/(label.length-1)) + 0).innerHTML = dataset[i].label + ": false";
-					}
 				} else
 				{
-					var tmp = [];
+					var tmp = new Array();
 					for (j in dataset[i].data)
 					{
 						tmp.push(dataset[i].data[j][1]);
@@ -577,14 +658,16 @@ var dynamicPlot = function ()
 						tmp = tmp.slice(1);
 					}
 					var y = 0;
-					while (tmp.length < totalPoints)
+					while (tmp.length < self.total_points)
 					{
 						y = data_ret[cnt];
 						//y = Math.floor(Math.random() * 100);
 						tmp.push(y);
 					}
 					// add the number to the corresponding label
-					document.getElementById("r"+ Math.floor(cnt/label.length) + (cnt%label.length)).innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
+					//document.getElementById("r"+ Math.floor(cnt/label.length) + (cnt%label.length)).innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
+					//document.getElementById(self.canvas).getElementsByTagName("table")[2].innerHTML = '<tr>dfsfd</tr>';
+document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("table")[0].innerText;
 					// zip the generated y values with the x values
 					var res = [];
 					for (var j = 0; j < tmp.length; ++ j)
@@ -597,282 +680,96 @@ var dynamicPlot = function ()
 		}
 		// plot an array of plots
 		updateData();
-		var plot = new Array();
-		for (var i = 0; i < robotNum; ++ i)
+		var data = new Array();
+		for (var j = 3; j < label.length; ++ j)
 		{
-			var data = [];
-			for (var j = 3; j < label.length; ++ j)
-			{
-				data.push({label: dataset[ROBOT_NAME[i]+label[j]].label, data: dataset[ROBOT_NAME[i]+label[j]].data});
-			}
-			plot[i] = $.plot($("#placeholder"+i), data, {
-				// drawing is faster without shadows
-				series: {shadowSize: 0, lines: {show: true} },
-				yaxis: { min: 0, max: 100 },
-				xaxis: { min: -totalPoints + 1, max: 0},
-				grid: {show: true},
-			});
+			data.push({label: dataset[label[j]].label, data: dataset[label[j]].data});
 		}
-		// draw the graphics by jsDraw2DX
-		var size = [1200, 900], enlarge = 8;
-		var gr = new jxGraphics(document.getElementById("graphics"));
-		var boundary = new jxRect(new jxPoint(0,0), size[0], size[1], new jxPen(new jxColor("grey"),'1px'));
-		boundary.draw(gr);
-		var grid = [], color = [];
-		calEnergy();
-		for (var i = 0; i < gridNum; ++ i)
-		{
-			for (var j = 0; j < gridNum; ++ j)
-			{
-				color[(i+1)*(j+1)-1] = Math.round(energy[(i+1)*(j+1)-1]);
-				color[(i+1)*(j+1)-1] = (255 - color[(i+1)*(j+1)-1] * color[(i+1)*(j+1)-1]).toString(16);
-				if (color[(i+1)*(j+1)-1].length == 1)
-				{
-					color[(i+1)*(j+1)-1] = "0" + color[(i+1)*(j+1)-1];
-				}
-				color[(i+1)*(j+1)-1] = "#FF" + color[(i+1)*(j+1)-1] + color[(i+1)*(j+1)-1];
-				grid[(i+1)*(j+1)-1] = new jxRect(new jxPoint(i * size[0] / gridNum, j * size[1] / gridNum), size[0] / gridNum, size[1] / gridNum, new jxPen(new jxColor("grey"),'1px'), new jxBrush(new jxColor(color[(i+1)*(j+1)-1])));
-				grid[(i+1)*(j+1)-1].draw(gr);
-			}
-		}
-		var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
-		home.draw(gr);
-		var patch1 = new jxCircle(new jxPoint(size[0]-30, size[1]-30), 20, new jxPen(new jxColor("green"),'1px'));
-		patch1.draw(gr);
-		var patch2 = new jxCircle(new jxPoint(30, size[1]-30), 20, new jxPen(new jxColor("green"),'1px'));
-		patch2.draw(gr);
-		// draw the robots
-		var body = [], line = [];
-		for (var i = 0; i < robotNum; ++ i)
-		{
-			document.getElementById("t"+i).innerHTML = "( " + 
-			dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length 
-			- 1][1] + ", " + 
-				dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 1][1] + " )";
-			var pos = new 
-			jxPoint(dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length - 1][1] * enlarge, dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 1][1] * enlarge);
-			body[i] = new jxCircle(pos, 20, new jxPen(new jxColor("black"),'1px'));
-			body[i].draw(gr);
-			for (var j = 0; j < trajLen; ++ j)
-			{
-				line.push( new jxLine(new jxPoint(0, 0), new jxPoint(0, 0), new jxPen(new jxColor("red"),'1px')) );
-				line[(i+1)*(j+1)-1].draw(gr);
-			}
-			//var test1 = new jxArc(pos, 100, 180, -90, 90, new jxPen(new jxColor("red"),'1px'));
-			//test1.draw(gr);
-		}
-		// update dynamically
+		var plot = $.plot("#" + this.placeholder, data, this.option);
 		function update()
 		{
 			updateData();
-			// update plots
-			for (var i = 0; i < robotNum; ++ i)
+			var data = new Array();
+			for (var j = 3; j < label.length; ++ j)
 			{
-				var data = [];
-				for (var j = 3; j < label.length; ++ j)
-				{
-					data.push( dataset[ROBOT_NAME[i]+label[j]].data );
-				}
-				plot[i].setData( data );
-				plot[i].draw();
+				data.push( dataset[label[j]].data );
 			}
-			// update the colors of the energy grids
-			calEnergy();
-			for (var i = 0; i < gridNum; ++ i)
-			{
-				for (var j = 0; j < gridNum; ++ j)
-				{
-					var pos = i * gridNum + j;
-					color[pos] = Math.round(energy[pos]);
-					color[pos] = 255 - color[pos] * color[pos];
-					if (color[pos] < 0)
-						color[pos] = 0;
-					color[pos] = color[pos].toString(16);
-					if (color[pos].length == 1)
-					{
-						color[pos] = "0" + color[pos];
-					}
-					color[pos] = "#FF" + color[pos] + color[pos];
-					grid[pos] = new jxRect(new jxPoint(i * size[0] / gridNum, j * size[1] / gridNum), size[0] / gridNum, size[1] / gridNum, new jxPen(new jxColor("grey"),'1px'), new jxBrush(new jxColor(color[pos])));
-					grid[pos].draw(gr);
-				}
-			}
-			// update the trajectory by jsDraw2DXvar
-			for (var i = 0; i < robotNum; ++ i)
-			{
-				document.getElementById("t"+i).innerHTML = "( " + dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length - 1][1] + ", " + dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 1][1] + " )";
-				pos = new jxPoint(dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length - 1][1] * enlarge, dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 1][1] * enlarge);
-				body[i].remove();
-				if (dataset[ROBOT_NAME[i]+"valid"].data)
-				{
-					body[i] = new jxCircle(pos, 20, new jxPen(new jxColor("black"),'1px'));
-					body[i].draw(gr);
-				}
-				for (var j = 0; j < trajLen; ++j)
-				{
-					var p = i * robotNum + j;
-					line[p].remove();
-					if (dataset[ROBOT_NAME[i]+"valid"].data)
-					{
-						line[p] = new jxLine(
-							new jxPoint(
-							dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length - 1 - j][1] * enlarge,
-							dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 1 - j][1] * enlarge ),
-							new jxPoint(
-							dataset[ROBOT_NAME[i]+"x"].data[dataset[ROBOT_NAME[i]+"x"].data.length - 2 - j][1] * enlarge,
-							dataset[ROBOT_NAME[i]+"y"].data[dataset[ROBOT_NAME[i]+"y"].data.length - 2 - j][1] * enlarge ),
-							new jxPen(new jxColor("red"),'1px'));
-						line[p].draw(gr);
-					}
-				}
-			}
-			setTimeout(update, 1000);
+			plot.setData( data );
+			plot.draw();
+			setTimeout(update, self.timeout);
 		}
 		update();
-	});
+	};
 	this.show = function ()
 	{
 		var html =
 			'<table border="' + this.border + '" style="width:' + this.table_width + ';height:' + this.table_height + ';">' +
 				'<tr>' +
-					'<td><div id="' + this.placehoder + '" style="width:' + this.width + ';height:' + this.height + ';"></div></td>' +
-					'<td style="width:100px">' +
-						'<a href="">cb01</a>' +
-						'<p>data:</p>' +
+					'<td><div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div></td>' +
+					'<td width="' + this.text_width + '">' +
+						'<a href="">robot</a>' +
+						'<table border="1">' +
+						'<tr><td>sdfsd</td><td>sdfsd</td></tr>' +
+						'</table>' +
 					'</td>' +
 				'</tr>' +
 			'</table>';
 		document.getElementById(this.canvas).innerHTML = html;
+		this.update();
 	}
 }
-var safeRange = function ()
+var safeRange = function (conf)
 {
 	this.canvas = "safeRange";
 	this.border = 1;
 	this.width = "80%";
 	this.align = "center";
-	this.sr_word = "safe-range";
+	this.sr_text = "safe-range";
 	this.min = 0;
 	this.max = 100;
-	this.safe_word = "safe";
-	this.alert_word = "DANGER !";
+	this.checked = false;
+	this.safe_text = "safe";
+	this.alert_text = "DANGER !";
 	this.debug = "debug";
-	this.update = $(function ()
+	this.timeout = 300;
+	for (var key in conf)
 	{
-		var totalPoints = 300, plotNum = 1, trajLen = 20, trajPlotNum = 1;
-		var labels = ["voltage", "current", "speed"];
-		var dataset = {
-			"0v": {label: labels[0], data: []},
-			"0c": {label: labels[1], data: []},
-			"0s": {label: labels[2], data: []},
-			"1v": {label: labels[0], data: []},
-			"1c": {label: labels[1], data: []},
-			"1s": {label: labels[2], data: []},
-			"2v": {label: labels[0], data: []},
-			"2c": {label: labels[1], data: []},
-			"2s": {label: labels[2], data: []},
-			"3v": {label: labels[0], data: []},
-			"3c": {label: labels[1], data: []},
-			"3s": {label: labels[2], data: []},
-			"0x": {label: ROBOT_NAME[0], data: []},
-			"0y": {label: ROBOT_NAME[0], data: []},
-			"1x": {label: ROBOT_NAME[1], data: []},
-			"1y": {label: ROBOT_NAME[1], data: []}, }
-		var redis_ret = 0;
-		function test_saferange(value)
+		if (typeof(this[key]) === "undefined")
 		{
-	document.getElementById("debug").innerHTML = 'debug: ' + value;
-			if (saferange && (value < sr_min || value > sr_max))
-			{
-				document.getElementById("safe").innerHTML = 'DANGER !!!';
-				alert("DANGER !!!");
-			} else
-			{
-				document.getElementById("safe").innerHTML = 'safe';
-			}
+			continue;
 		}
-		function getData(label) {
-			if (dataset[label] == undefined)
-				return [0, 0];
-			if (dataset[label].data.length > 0)
-				dataset[label].data = dataset[label].data.slice(1);
-			while (dataset[label].data.length < totalPoints)
-			{
-				var prev = dataset[label].data.length > 0 ? dataset[label].data[dataset[label].data.length - 1] : 0;
-				var y = prev + Math.random() * 10 - 5;
-				if (y < 0)
-					y = 0;
-				if (y > 100)
-					y = 100;
-				dataset[label].data.push(y);
-			}
-				if (label[1] == "v")
-				{
-					test_saferange(y);
-				}
-			if (label[1] == "v" || label[1] == "c" || label[1] == "s")
-			{
-				document.getElementById(label[1]).innerHTML = dataset[label].label + ": " + Math.round(y);
-			}
-			// zip the generated y values with the x values
-			var res = [];
-			for (var i = 0; i < dataset[label].data.length; ++ i)
-				res.push([i + 1 - dataset[label].data.length, dataset[label].data[i]])
-			return res;
-		}
-		var options = {
-			// drawing is faster without shadows
-			series: {shadowSize: 0, lines: {show: true} },
-			yaxis: { min: 0, max: 100 },
-			xaxis: { min: -totalPoints + 1, max: 0},
-			grid: {show: true},
-		};
-		var plot = new Array();
-		for (var i = 0; i < plotNum; ++ i)
+		this[key] = conf[key];
+		if ("" != this.debug)
 		{
-			var data = [{label: dataset[i+"v"].label, data: getData(i+"v")},
-			{label: dataset[i+"c"].label, data: getData(i+"c")},
-			{label: dataset[i+"s"].label, data: getData(i+"s")} ];
-			plot[i] = $.plot($("#placeholder"+i), data, options);
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
 		}
-		var res = new Array();
-		for (var i = 0; i < trajPlotNum; ++ i)
+	}
+	this.test_saferange = function (value)
+	{
+		if (this.checked && (value < this.min || value > this.max))
 		{
-			getData(i+"x");
-			getData(i+"y");
-			var len = dataset[i+"y"].data.length > dataset[i+"x"].data.length ? dataset[i+"x"].data.length : dataset[i+"y"].data.length;
-			var init = len > trajLen ? len - trajLen : 0;
-			res[i] = [];
-			for (var j = init; j < len; ++ j)
-				res[i].push([dataset[i+"x"].data[j], dataset[i+"y"].data[j]]);
-		}
-		function update()
+			document.getElementById(this.canvas).getElementsByTagName("p")[0].innerHTML = 'DANGER !!!';
+			alert("DANGER !!!");
+		} else
 		{
-			for (var i = 0; i < plotNum; ++ i)
-			{
-				var data = [getData(i+"v"), getData(i+"c"), getData(i+"s")];
-				plot[i].setData(data);
-				plot[i].draw();
-			}
-			setTimeout(update, 100);
+			document.getElementById(this.canvas).getElementsByTagName("p")[0].innerHTML = 'safe';
 		}
-		update();
-	});
+	}
 	this.show = function ()
 	{
 		var html =
 			'<table border="' + this.border + '" align="' + this.align + '" width="' + this.width + '">' +
 				'<tr align="' + this.align + '">' +
-					'<td><input type="checkbox" name="saferange" value="1">' + this.sr_word + '</td>' +
+					'<td><input type="checkbox" name="saferange">' + this.sr_text + '</td>' +
 					'<td>' +
 						'<form name="safe_range">' +
 						'min<input type="text" name="min" value="' + this.min + '">' +
 						'max<input type="text" name="max" value="' + this.max + '">' +
-						'<input type="button" value="submit" onClick="value_saferange(this.form)">' +
+						'<input type="button" value="submit">' +
 						'</form>' +
 					'</td>' +
 					'<td width="20%">' +
-						'<p id="safe">' + this.safe_word + '</p>' +
+						'<p id="safe">' + this.safe_text + '</p>' +
 					'</td>' +
 				'</tr>' +
 			'</table>';
@@ -880,58 +777,208 @@ var safeRange = function ()
 		var self = this;
 		document.getElementById(this.canvas).getElementsByTagName("input")[0].onchange = function ()
 		{
-document.getElementById(self.debug).innerHTML = "debug: " + this.checked;
+			self.checked = this.checked;
+			if ("" != self.debug)
+			{
+				document.getElementById(self.debug).innerHTML = "debug: " + self.checked;
+			}
 		}
 		document.getElementById(this.canvas).getElementsByTagName("input")[3].onclick = function ()
 		{
-document.getElementById(self.debug).innerHTML = "debug: " + this.form.min.value + " " + this.form.max.value;
+			self.min = this.form.min.value;
+			self.max = this.form.max.value;
+			if ("" != self.debug)
+			{
+				document.getElementById(self.debug).innerHTML = "debug: " + self.min + " " + self.max;
+			}
 		}
+		var update = function ()
+		{
+			var data = Math.round(Math.random() * 100);
+			if ("" != self.debug)
+			{
+				document.getElementById(self.debug).innerHTML = "debug: " + data;
+			}
+			self.test_saferange(data);
+			setTimeout(update, self.timeout);
+		};
+		update();
 	}
 }
-function init()
-{
-	var mapOptions =
-	{
-		zoom: 17,
-		center: new google.maps.LatLng(LAB[0], LAB[1]),
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-	var map = new google.maps.Map(document.getElementById("map_canvas"),
-		mapOptions);
-document.getElementById("debug").innerHTML = "debug: " + document.getElementById("map_canvas");
-}
-var trajGmap = function ()
+/*var trajGmap = function (conf)
 {
 	this.canvas = "trajGmap";
 	this.debug = "debug";
 	this.map_canvas = "map_canvas";
 	this.border = 0;
+	this.align = "center";
+	this.width = "40%";
+	this.debug = "debug";
+	this.timeout = 300;
+	this.view_type = "basic";
+	this.follow = "";
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+		if ("" != this.debug)
+		{
+			document.getElementById(this.debug).innerHTML = "debug: " + key;
+		}
+	}
+	this.map;
+	this.last_coord = new Array();
+	this.coord = new Array();
+	this.rpath = new Array();
+	this.robot_move = function ()
+	{
+document.getElementById(this.debug).innerHTML = "debug: " + "here";
+		connect_redis("call_method", "method=get_robot_data");
+		// separate the data into different robots
+		var ret = SERVER_RET.split(" ,");
+		for (var i = 0; i < ret.length; ++ i)
+		{
+			// separate the data into different values
+			var j = ret[i].split(" ");
+			// the 1st is x, and the 2nd is y
+			var x = parseFloat(j[1]), y = parseFloat(j[2]);
+			if (x == undefined || isNaN(x) || y == undefined || isNaN(y))
+				continue;
+			last_coord[i] = coord[i];
+			//coord[i] = [coord[i][0] + j[1] / 100 * OFFSET - OFFSET / 2, coord[i][1] + j[2] / 100 * OFFSET - OFFSET / 2];
+			coord[i] = [j[1], j[2]];
+			if (coord[i] == last_coord[i])
+			{
+				continue;
+			}
+			// keep the length of path no longer than a threshold
+			while (rpath[i].length >= TRAJ_NUM)
+			{
+				rpath[i][0].setMap(null);
+				rpath[i].splice(0, 1);
+			}
+			var color, weight, icon = [];
+			// select if it is colorful
+			if (view_type == "colorful")
+			{
+				color = "#" + Math.floor(Math.random()*16777215).toString(16);
+				weight = 4;
+				switch (Math.round(Math.random() * 6))
+				{
+				case 0:
+					icon = [];
+					break;
+				case 1: // arrows
+					icon = [{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}];
+					break;
+				case 2: // dashed lines
+					icon = [{
+						icon: {
+							path: 'M 0,-1 0,1',
+							strokeOpacity: 1,
+							scale: 4
+						},
+						offset: '0',
+						repeat: '20px'
+					}];
+					break;
+				case 3:
+					icon = [{
+						icon: {
+							path: 'M -2,0 0,-2 2,0 0,2 z',
+							strokeColor: '#F00',
+							fillColor: '#F00',
+							fillOpacity: 1
+						},
+						offset: '50%'
+					}];
+					break;
+				case 4:
+					icon = [{
+						icon: {
+							path: 'M -2,-2 2,2 M 2,-2 -2,2',
+							strokeColor: '#292',
+							strokeWeight: 4
+						},
+						offset: '50%'
+					}];
+					break;
+				case 5:
+					icon = [{
+						icon: {
+							path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3',
+							strokeColor: '#00F',
+							 rotation: 0
+						},
+						offset: '50%'
+					}];
+					break;
+				default:
+				}
+			} else
+			{
+				color = "black";
+				weight = 1;
+			}
+			if (typeof robot[i] != "undefined")
+			{
+				robot[i].setMap(null);
+			}
+			robot[i] = new google.maps.Marker({
+				position: new google.maps.LatLng(coord[i][0], coord[i][1]),
+				map: map,
+				title:"robot"+i,
+				icon: "cabs.png"
+			});
+			rpath[i].push(new google.maps.Polyline({
+				map: map,
+				path: [new google.maps.LatLng(last_coord[i][0], last_coord[i][1]), new google.maps.LatLng(coord[i][0], coord[i][1])],
+				strokeColor: color,
+				strokeOpacity: 1,
+				strokeWeight: weight,
+				icons: icon
+			}));
+			if (follow == ""+i)
+			{
+				// let the map follow a robot
+				map.panTo(robot[i].getPosition());
+			}
+		}
+		window.setTimeout(robot_move, TIME_OUT);
+	}
 	this.init = function ()
 	{
-document.getElementById(this.debug).innerHTML = "debug: " + "update";
-		/*var mapOptions =
+		var mapOptions =
 		{
 			zoom: 17,
 			center: new google.maps.LatLng(LAB[0], LAB[1]),
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
-		var map = new google.maps.Map(document.getElementById('map_canvas'),
+		map = new google.maps.Map(document.getElementById('map_canvas'),
 			mapOptions);
 		var marker = new google.maps.Marker({
 			position: new google.maps.LatLng(LAB[0], LAB[1]),
 			map: map,
 			title: 'Autonomy Lab at Simon Fraser University'
-		});*/
+		});
+		for (var i = 0; i < ROBOT_NUM; ++ i)
+		{
+			coord.push([LAB[0], LAB[1]]);
+			rpath.push(new Array());
+		}
+		robot_move();
 	}
 	this.show = function ()
 	{
 		var html =
-			'<div id="map_canvas"></div>' +
-			'<table border="0" align="center" width="40%" >' +
+			'<table border="' + this.border + '" align="' + this.align + '" width="' + this.width + '" >' +
 				'<tr>' +
 					'<td>' +
-						'<form align="center">' +
-							'<select name="view" onClick="change_view(this.form)">' +
+						'<form align="' + this.align + '">' +
+							'<select name="view">' +
 								'<option value="basic" selected="selected">basic</option>' +
 								'<option value="energy">energy map</option>' +
 								'<option value="time">time map</option>' +
@@ -941,7 +988,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + "update";
 					'</td>' +
 					'<td>follow:' +
 						'<form align="center">' +
-							'<select name="follow" onClick="follow_robot(this.form)">' +
+							'<select name="follow">' +
 								'<option value="none" selected="selected">none</option>' +
 								'<option value="0">0</option>' +
 								'<option value="1">1</option>' +
@@ -953,6 +1000,28 @@ document.getElementById(this.debug).innerHTML = "debug: " + "update";
 			'</table>';
 		document.getElementById(this.canvas).innerHTML = html;
 		var self = this;
-		//google.maps.event.addDomListener(window, 'load', init);
+		var select = document.getElementsByTagName("select");
+		select[0].onclick = function ()
+		{
+			if (this.form.view.value == self.view_type)
+				return;
+			//clear_grid();
+			self.view_type = this.form.view.value;
+			if ("" != self.debug)
+			{
+				document.getElementById(self.debug).innerHTML = "debug: " + self.view_type;
+			}
+		}
+		select[1].onclick = function ()
+		{
+			if (this.form.follow.value == self.follow)
+				return;
+			//clear_grid();
+			self.follow = this.form.follow.value;
+			if ("" != self.debug)
+			{
+				document.getElementById(self.debug).innerHTML = "debug: " + self.follow;
+			}
+		}
 	}
-}
+}*/

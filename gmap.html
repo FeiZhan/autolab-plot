@@ -99,6 +99,7 @@ document.getElementById("debug").innerHTML = 'debug: ' + xmlhttp.responseText;
 function robot_move()
 {
 	connectRedis("get_robot_data", "");
+document.getElementById("debug").innerHTML = 'debug: 1' + redis_ret["get_robot_data"];
 	// separate the data into different robots
 	var ret = redis_ret["get_robot_data"].split(", ");
 	for (var i = 0; i < ret.length; ++ i)
@@ -334,6 +335,6 @@ google.maps.event.addDomListener(window, 'load', initialize);
 			</tr>
 		</table>
 		<p id="debug">debug: </p>
-		<p id="debug2">debug2: </p>
+		<p id="receive">receive: </p>
 	</body>
 </html>
