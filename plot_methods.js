@@ -49,7 +49,7 @@ var phpComm = function (conf)
 			{
 				this.rec_time = new Date().getTime();
 				self.receive = xmlhttp.responseText;
-//document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
+document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
 			}
 		}
 		if (cmd == "")
@@ -60,7 +60,7 @@ var phpComm = function (conf)
 			cmd += "&host=" + this.host + "&port=" + this.port;
 		}
 		xmlhttp.open("GET", file + ".php?" + cmd, true);
-//document.getElementById(self.send_text).innerHTML = "send: " + file + ".php?" + cmd;
+document.getElementById(self.send_text).innerHTML = "send: " + file + ".php?" + cmd;
 		xmlhttp.send();
 		this.send_time = new Date().getTime();
 	}
@@ -157,6 +157,8 @@ var serverStatus = function (conf)
 	this.width = "60%";
 	this.align = "center";
 	this.debug = "debug";
+	this.max_count = 1000;
+	this.count = 0;
 	this.php_comm = new phpComm();
 	this.timeout = 300;
 	for (var key in conf)
@@ -199,8 +201,9 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					break;
 				}
 			}
-			if (false == flag)
+			if (false == flag && self.count < self.max_count)
 			{
+				++ self.count;
 				self.db_status.push(key_value[0]);
 				document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML += 
 					'<tr align="' + self.align + '">' +
@@ -1025,11 +1028,9 @@ document.getElementById("debug").innerHTML = "debug: " + self.view_type + " " + 
 			var grid_size = .001 * Math.pow(17, 10) / Math.pow(self.map.getZoom(), 10);
 			var center_pos = self.coord_to_grid(self.map.getCenter().lat(), self.map.getCenter().lng());
 			var file = "call_method", cmd = "method=cal_grid&grid_size=" + grid_size + "&type=" + self.view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
-document.getElementById("send").innerHTML = "send: " + file + ".php?" + cmd;
 			self.grid_php_comm.commPhp(file, cmd);
 			// separate the data into different robots
 			var ret = self.grid_php_comm.receive.split(" ");
-document.getElementById("receive").innerHTML = "receive: " + self.grid_php_comm.receive;
 			var dist, min;
 			for (var i = 0; i + 3 < ret.length; i += 4)
 			{

@@ -55,10 +55,26 @@ google.maps.event.addDomListener(window, 'load', function ()
 		<br />
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
-				<td width="70%" align="center">
+				<td width="70%" align="center" valign="top">
+					<ul align="center">
+						<li style="display:inline;margin:3%;">
+							<a href="?robot=1">robot 1</a>
+						</li>
+						<li style="display:inline;margin:3%;">
+							<a href="?robot=2">robot 2</a>
+						</li>
+						<li style="display:inline;margin:3%;">
+							<a href="?robot=3">robot 3</a>
+						</li>
+						<li style="display:inline;margin:3%;">
+							<a href="?robot=4">robot 4</a>
+						</li>
+					</ul>
+					<hr />
 					<div id="trajPlot2"></div>
 					<div id="dynamicPlot"></div>
 					<div id="safeRange"></div>
+					<hr />
 					<br />
 					<div id="staticPlot"></div>
 					<br />
@@ -66,7 +82,7 @@ google.maps.event.addDomListener(window, 'load', function ()
 					<br />
 					<div id="keySetter"></div>
 				</td>
-				<td>
+				<td valign="top">
 					<div id="serverStatus"></div>
 				</td>
 			</tr>

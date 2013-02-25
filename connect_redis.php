@@ -130,7 +130,7 @@ function cal_energy()
 // obtain data from Redis, calculate energy or time grids for google maps, and transmit them to html
 function cal_grid()
 {
-	global $client, $ROBOT_NAME;
+	global $client, $ROBOT_NAME, $LAB;
 	// obtain old data from Redis
 	switch($_GET["type"])
 	{
