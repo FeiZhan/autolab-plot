@@ -10,8 +10,9 @@ var phpComm = function (conf)
 	this.send_text = "send";
 	this.send_time = "";
 	this.rec_time = "";
-	this.host = "localhost";//"192.168.1.120";
+	this.host = "192.168.1.120";
 	this.port = "6379";
+	this.server;
 	for (var key in conf)
 	{
 		if (typeof(this[key]) === "undefined")
@@ -26,9 +27,31 @@ var phpComm = function (conf)
 		this.host = host;
 		this.port = port;
 	}
+	this.setServer = function (rs)
+	{
+		if (typeof rs.getHost != "function")
+		{
+			alert("error");
+			return;
+		}
+		this.server = rs;
+	}
 	this.getRec = function ()
 	{
 		return this.receive;
+	}
+	this.clearRec = function ()
+	{
+		this.receive = "";
+	}
+	this.getDelay = function ()
+	{
+		var now = new Date().getTime();
+		if (now - self.rec_time > 1000)
+		{
+			return null;
+		}
+		return this.delay;
 	}
 	this.commPhp = function (file, cmd)
 	{
@@ -47,17 +70,30 @@ var phpComm = function (conf)
 		{
 			if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
 			{
-				this.rec_time = new Date().getTime();
+				self.rec_time = new Date().getTime();
+				self.delay = self.rec_time - self.send_time;
 				self.receive = xmlhttp.responseText;
 document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
 			}
 		}
 		if (cmd == "")
 		{
-			cmd = "host=" + this.host + "&port=" + this.port;
+			if (typeof this.server != "undefined")
+			{
+				cmd = "host=" + this.server.getHost() + "&port=" + this.server.getPort();
+			} else
+			{
+				cmd = "host=" + this.host + "&port=" + this.port;
+			}
 		} else
 		{
-			cmd += "&host=" + this.host + "&port=" + this.port;
+			if (typeof this.server != "undefined")
+			{
+				cmd += "&host=" + this.server.getHost() + "&port=" + this.server.getPort();
+			} else
+			{
+				cmd += "&host=" + this.host + "&port=" + this.port;
+			}
 		}
 		xmlhttp.open("GET", file + ".php?" + cmd, true);
 document.getElementById(self.send_text).innerHTML = "send: " + file + ".php?" + cmd;
@@ -75,6 +111,7 @@ var labLogo = function (conf)
 	this.src = "logo.png";
 	this.title = "Autolab Demonstration";
 	this.debug = "debug";
+	this.subheading = 1;
 	for (var key in conf)
 	{
 		if (typeof(this[key]) === 'undefined')
@@ -84,6 +121,7 @@ var labLogo = function (conf)
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
+	var self = this;
 	this.show = function ()
 	{
 		var html = 
@@ -93,6 +131,24 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					'<td><h1 align="' + this.align + '">' + this.title + '</h1></td>' +
 				'</tr>' +
 			'</table>';
+		if (self.subheading)
+		{
+			html += 
+				'<table border="1" align="' + this.align + '" width="' + this.width + '">' +
+					'<tr align="' + this.align + '">' +
+						'<td><a href="./status.html">status</a></td>' +
+						'<td><a href="./data_generator.html">data generator</a></td>' +
+						'<td><a href="./dataparser/index.html">data parser</a></td>' +
+						'<td><a href="./static.html">static plot</a></td>' +
+						'<td><a href="./real-time.html">a simple dynamic plot</a></td>' +
+						'<td><a href="./dynamic-all.html">dynamic plot for all robots</a></td>' +
+						'<td><a href="./dynamic-robot.html">dynamic plot for one robot</a></td>' +
+						'<td><a href="./trajectory.html">trajectory plot</a></td>' +
+						'<td><a href="./gmap.html">google map</a></td>' +
+						'<td><a href="./test.html">test</a></td>' +
+					'</tr>' +
+				'</table>';
+		}
 		document.getElementById(this.canvas).innerHTML = html;
 	}
 }
@@ -105,15 +161,17 @@ var redisServer = function (conf)
 	this.port = PORT;
 	this.rate = 1000;
 	this.debug = "debug";
+	this.horizontal = 1;
 	for (var key in conf)
 	{
-		if (typeof(this[key]) === 'undefined')
+		if (typeof(this[key]) === "undefined")
 		{
 			continue;
 		}
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
+	var self = this;
 	this.getHost = function ()
 	{
 		return this.host;
@@ -129,7 +187,10 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + this.border + '" align="' + this.align + '">' +
+			'<table border="' + this.border + '" align="' + this.align + '">';
+		if (self.horizontal)
+		{
+			html +=
 				'<tr align="' + this.align + '">' +
 					'<form>' +
 						'<td>host<input type="text" name="host" value="' + this.host + '" /></td>' +
@@ -137,10 +198,27 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + this.rate + '" /></td>' +
 						'<td><input type="button" value="submit" /></td>' +
 					'</form>' +
-				'</tr>' +
-			'</table>';
+				'</tr>';
+		} else
+		{
+			html +=
+				'<form>' +
+					'<tr align="' + this.align + '">' +
+						'<td>host<input type="text" name="host" value="' + this.host + '" /></td>' +
+					'</tr>' +
+					'<tr align="' + this.align + '">' +
+						'<td>port<input type="text" name="port" value="' + this.port + '" /></td>' +
+					'</tr>' +
+					'<tr align="' + this.align + '">' +
+						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + this.rate + '" /></td>' +
+					'</tr>' +
+					'<tr align="' + this.align + '">' +
+						'<td><input type="button" value="submit" /></td>' +
+					'</tr>' +
+				'</form>';
+		}
+		html += '</table>';
 		document.getElementById(this.canvas).innerHTML = html;
-		var self = this;
 		document.getElementById(this.canvas).getElementsByTagName("input")[3].onclick = function ()
 		{
 			self.host = this.form.host.value;
@@ -158,7 +236,7 @@ var serverStatus = function (conf)
 	this.align = "center";
 	this.debug = "debug";
 	this.max_count = 1000;
-	this.count = 0;
+	this.count = 1;
 	this.php_comm = new phpComm();
 	this.timeout = 300;
 	for (var key in conf)
@@ -170,12 +248,22 @@ var serverStatus = function (conf)
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
-	this.db_status = new Array();
+	this.db_status = ["delay"];
 	var self = this;
 	this.update = function ()
 	{
+		// empty the status array in order to adapt to a new server dynamically
+		//[bug] the received data does not change if we cannot connect the server.
+		self.count = 1;
+		self.db_status = ["delay"];
 		self.php_comm.commPhp("call_method", "method=status");
-		var data = self.php_comm.receive.split(", ");
+		var data = self.php_comm.getRec().split(", ");
+		self.php_comm.clearRec();
+		document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML = 
+			'<tr align="' + self.align + '">' +
+				'<td><p>delay (ms)</p></td>' +
+				'<td><p>' + self.php_comm.getDelay() + '</p></td>' +
+			'</tr>';
 		for (var i = 0; i < data.length; ++ i)
 		{
 			var key_value = data[i].split(" ");
@@ -184,23 +272,23 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				continue;
 			}
 			var flag = false;
-			for (var j = 0; j < self.db_status.length; ++ j)
-			{
-				if (key_value[0] == self.db_status[j])
-				{
-					var key_array = document.getElementsByTagName("p");
-					for (var i = 0; i < key_array.length; ++ i)
-					{
-						if (key_array[i].innerHTML == key_value[0])
-						{
-							key_array[i+1].innerHTML = key_value[1];
-							break;
-						}
-					}
-					flag = true;
-					break;
-				}
-			}
+			//for (var j = 0; j < self.db_status.length; ++ j)
+			//{
+				//if (key_value[0] == self.db_status[j])
+				//{
+					//var key_array = document.getElementsByTagName("p");
+					//for (var i = 0; i < key_array.length; ++ i)
+					//{
+						//if (key_array[i].innerHTML == key_value[0])
+						//{
+							//key_array[i+1].innerHTML = key_value[1];
+							//break;
+						//}
+					//}
+					//flag = true;
+					//break;
+				//}
+			//}
 			if (false == flag && self.count < self.max_count)
 			{
 				++ self.count;
@@ -227,12 +315,16 @@ var keySetter = function (conf)
 	this.border = 1;
 	this.align = "center";
 	this.heading = 1;
-	this.key = ["cb18", "cb01"];
-	this.value = ["@@@field_robot", "@@@random_robot"];
-	this.init_num = 2;
+	this.init_key = ["cb18", "cb01", "last_time", "last_time_frame"];
+	this.init_value = ["@@@field_robot", "@@@random_robot", "@@@clear", "@@@clear"];
+	this.key = new Array();
+	this.value = new Array();
+	this.init_num = 8;
 	this.new_key = "";
 	this.new_value = "";
+	this.meaning = 0;
 	this.debug = "debug";
+	this.rate = 1000;
 	this.php_comm = new phpComm();
 	for (var key in conf)
 	{
@@ -244,18 +336,73 @@ var keySetter = function (conf)
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
 	var self = this;
-	this.update = function ()
+	this.setRate = function (r)
 	{
-		for (var i = 0; i < key.length; ++ i)
+		this.rate = r;
+	}
+	this.submit_key = function ()
+	{
+		//[bug] new buttons do not work
+		var flag = false;
+		for (var i in self.key)
 		{
-			if (key[i] != undefined && key[i] != null && key[i] != "")
+			if (self.key[i] == this.form.key.value)
 			{
-				data += "&key" + i + "=" + key[i] + "&value" + i + "=" + value[i];
+				self.value[i] = this.form.value.value;
+				flag = true;
+				break;
 			}
 		}
-		//connect_redis("data_generator", data);
+		if (false == flag)
+		{
+			self.key.push(this.form.key.value);
+			self.value[self.key.length - 1] = this.form.value.value;
+		}
+//document.getElementById(self.debug).innerHTML = "debug: " + this.form.key.value + this.form.value.value;
+	}
+	// add callback function to every submit button (the amount of those is not reliable)
+	this.add_submit_callback = function ()
+	{
+		var button_array = document.getElementById(self.canvas).getElementsByTagName("input");
+		//[bug] why count?
+		var count = 0;
+		for (var i in button_array)
+		{
+			if (i != 0 && "button" == button_array[i].type)
+			{
+				button_array[i].onclick = self.submit_key;
+				count += i;
+			}
+		}
+	}
+	this.addKey = function ()
+	{
+		var html =
+			'<tr align="' + self.align + '">' +
+				'<form>' +
+					'<td><input type="text" name="key" value="' + self.new_key + '" /></td>' +
+					'<td><input type="text" name="value" value="' + self.new_value + '" size="100%" /></td>' +
+					'<td><input type="button" value="submit" /></td>' +
+				'</form>' +
+			'</tr>';
+		document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML += html;
+		// the callback function has to be assigned again
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = self.addKey;
+		self.add_submit_callback();
+document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("tr").length;
+	}
+	this.update = function ()
+	{
+		var data = "";
+		for (var i = 0; i < self.key.length; ++ i)
+		{
+			if (self.key[i] != undefined && self.key[i] != null && self.key[i] != "")
+			{
+				data += "&key" + i + "=" + self.key[i] + "&value" + i + "=" + self.value[i];
+			}
+		}
 		self.php_comm.commPhp("data_generator", data);
-		setTimeout(this.update, rate);
+		setTimeout(self.update, self.rate);
 	}
 	this.show = function ()
 	{
@@ -272,56 +419,53 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		}
 		for (var i = 0; i < this.init_num; ++ i)
 		{
+			var key_tmp = (self.init_key.length > i) ? this.init_key[i] : "";
+			var value_tmp = (self.init_value.length > i) ? this.init_value[i] : "";
 			html +=
 					'<tr align="' + this.align + '">' +
 						'<form>' +
-							'<td><input type="text" name="key" value="' + this.key[i] + '" /></td>' +
-							'<td><input type="text" name="value" value="' + this.value[i] + '" size="100%" /></td>' +
+							'<td><input type="text" name="key" value="' + key_tmp + '" /></td>' +
+							'<td><input type="text" name="value" value="' + value_tmp + '" size="100%" /></td>' +
 							'<td><input type="button" value="submit" /></td>' +
 						'</form>' +
 					'</tr>';
 		}
 		html += '</table>';
+		if (this.meaning)
+		{
+			html += 
+				'<br />' +
+				'<table border="1" align="center" width="80%">' +
+					'<tr align="center">' +
+						'<td width="20%">code</td>' +
+						'<td width="80%">meaning</td>' +
+					'</tr>' +
+					'<tr align="center">' +
+						'<td>@@@clear</td>' +
+						'<td>Set to void</td>' +
+					'</tr>' +
+					'<tr align="center">' +
+						'<td>@@@random_value</td>' +
+						'<td>A random number</td>' +
+					'</tr>' +
+					'<tr align="center">' +
+						'<td>@@@random_robot</td>' +
+						'<td>A set of random numbers describing a robot as "time x y voltage current". The boundary of x and y is [0, 100]</td>' +
+					'</tr>' +
+					'<tr align="center">' +
+						'<td>@@@field_robot</td>' +
+						'<td>A set of random numbers describing a robot as "time x y voltage current", with unconstrained x and y representing a field robot moving out of the lab.</td>' +
+					'</tr>' +
+					'<tr align="center">' +
+						'<td>@@@-</td>' +
+						'<td>A set of random numbers describing a camera return values as "time robotID x y voltage current".</td>' +
+					'</tr>' +
+				'</table>';
+		}
 		document.getElementById(this.canvas).innerHTML = html;
-		var self = this;
-		var submit_key = function ()
-		{
-			//[bug] new buttons do not work
-//document.getElementById(self.debug).innerHTML = "debug: " + this.form;
-			// how about one button to submit everything?
-		}
-		// add callback function to every submit button (the amount of that is not reliable)
-		var add_submit_callback = function ()
-		{
-			var button_array = document.getElementById(self.canvas).getElementsByTagName("input");
-			var count = 0;
-			for (var i in button_array)
-			{
-				if (i != 0 && "button" == button_array[i].type)
-				{
-					button_array[i].onclick = submit_key;
-					count += i;
-				}
-			}
-		}
-		var addKey = function ()
-		{
-			var html =
-				'<tr align="' + self.align + '">' +
-					'<form>' +
-						'<td><input type="text" name="key" value="' + self.new_key + '" /></td>' +
-						'<td><input type="text" name="value" value="' + self.new_value + '" size="100%" /></td>' +
-						'<td><input type="button" value="submit" /></td>' +
-					'</form>' +
-				'</tr>';
-			document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML += html;
-			// the callback function has to be assigned again
-			document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = addKey;
-			add_submit_callback();
-document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("tr").length;
-		}
-		document.getElementById(this.canvas).getElementsByTagName("input")[0].onclick = addKey;
-		add_submit_callback();
+		document.getElementById(this.canvas).getElementsByTagName("input")[0].onclick = self.addKey;
+		self.add_submit_callback();
+		self.update();
 	}
 }
 var staticPlot = function (conf)
@@ -363,7 +507,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		// update the plot periodically in order to plot the data from Redis
 		function plot_update()
 		{
-			var rec = self.php_comm.receive;
+			var rec = self.php_comm.getRec();
 			if (rec != self.last_ret)
 			{
 				// we have new data from Redis
@@ -394,13 +538,11 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				'<input type="button" value="submit" />' +
 			'</form></div>';
 		document.getElementById(this.canvas).innerHTML = html;
-		var self = this;
 		document.getElementById(this.canvas).getElementsByTagName("input")[1].onclick = function ()
 		{
 			var key = this.form.key.value;
 			if (key != undefined && key != "")
 			{
-				//connect_redis("call_method", "method=get_key&key=" + key);
 				self.php_comm.commPhp("call_method", "method=get_key&key=" + key);
 			}
 		}
@@ -481,8 +623,7 @@ var trajPlot1 = function (conf)
 		function plot_update()
 		{
 			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			//connect_redis("get_robot_data", "");
-			var tmp = self.php_comm.receive.split(", ");
+			var tmp = self.php_comm.getRec().split(", ");
 			tmp = tmp[0];
 			tmp = tmp.split(" ");
 			pos[0] = parseFloat(tmp[1]);
@@ -588,8 +729,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		function plot_update()
 		{
 			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			//connect_redis("get_robot_data", "");
-			var tmp = self.php_comm.receive.split(", ");
+			var tmp = self.php_comm.getRec().split(", ");
 			tmp = tmp[0];
 			tmp = tmp.split(" ");
 			pos[0] = parseFloat(tmp[1]);
@@ -629,7 +769,7 @@ var dynamicPlot = function (conf)
 	this.placeholder = "dp_placeholder";
 	this.width = "100%";
 	this.height = "300px";
-	this.text_width = "100px";
+	this.text_width = "130px";
 	this.debug = "debug";
 	this.total_points = 100;
 	this.timeout = 300;
@@ -650,10 +790,10 @@ var dynamicPlot = function (conf)
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
+	var self = this;
 	this.update = function ()
 	{
-		var label = ["valid", "x", "y", "voltage", "current"], data_ret = [];
-		var self = this;
+		var label = ["frame", "x", "y", "voltage", "current"], data_ret = [];
 		for (var i = 0; i < label.length; ++ i)
 		{
 			data_ret[i] = 0;
@@ -667,7 +807,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		function getData()
 		{
 			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			var ret = self.php_comm.receive.split(" ");
+			var ret = self.php_comm.getRec().split(" ");
 			for (var i = 0; i < ret.length - 1; ++ i)
 			{
 				data_ret[i] = parseFloat(ret[i]);
@@ -692,9 +832,14 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					tmp.push(y);
 				}
 				// add the number to the corresponding label
-				//document.getElementById("r"+ Math.floor(cnt/label.length) + (cnt%label.length)).innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
-				//document.getElementById(self.canvas).getElementsByTagName("table")[2].innerHTML = '<tr>dfsfd</tr>';
-//document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("table")[0].innerText;
+				var lis = document.getElementById(self.canvas).getElementsByTagName("li");
+				for (var j = 0; j < lis.length; ++ j)
+				{
+					if (lis[j].innerText.length >= dataset[i].label.length && lis[j].innerText.substr(0, dataset[i].label.length) == dataset[i].label)
+					{
+						lis[j].innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
+					}
+				}
 				// zip the generated y values with the x values
 				var res = [];
 				for (var j = 0; j < tmp.length; ++ j)
@@ -733,10 +878,12 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					'<td><div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div></td>' +
 					'<td width="' + this.text_width + '" align="center">' +
 						'<a href="">robot</a>' +
-						'<table border="1" align="center">' +
-						'<tr><td>voltage</td></tr>' +
-						'<tr><td>current</td></tr>' +
-						'</table>' +
+						'<ul style="list-style-type:none;">' +
+							'<li>x:</li>' +
+							'<li>y:</li>' +
+							'<li>voltage:</li>' +
+							'<li>current:</li>' +
+						'<ul>' +
 					'</td>' +
 				'</tr>' +
 			'</table>';
@@ -767,6 +914,7 @@ var safeRange = function (conf)
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
+	var self = this;
 	this.test_saferange = function (value)
 	{
 		if (this.checked && (value < this.min || value > this.max))
@@ -797,7 +945,6 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				'</tr>' +
 			'</table>';
 		document.getElementById(this.canvas).innerHTML = html;
-		var self = this;
 		document.getElementById(this.canvas).getElementsByTagName("input")[0].onchange = function ()
 		{
 			self.checked = this.checked;

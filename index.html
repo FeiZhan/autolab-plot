@@ -35,20 +35,6 @@ google.maps.event.addDomListener(window, 'load', function ()
 	</head>
 	<body background="">
 		<div id="labLogo"></div>
-		<table border="1" align="center" width="100%">
-			<tr align="center">
-				<td><a href='./status.html'>status</a></td>
-				<td><a href='./data_generator.html'>data generator</a></td>
-				<td><a href='./dataparser/index.html'>data parser</a></td>
-				<td><a href='./static.html'>static plot</a></td>
-				<td><a href='./real-time.html'>a simple dynamic plot</a></td>
-				<td><a href='./dynamic-all.html'>dynamic plot for all robots</a></td>
-				<td><a href='./dynamic-robot.html'>dynamic plot for one robot</a></td>
-				<td><a href='./trajectory.html'>trajectory plot</a></td>
-				<td><a href='./gmap.html'>google map</a></td>
-				<td><a href='./test.html'>test</a></td>
-			</tr>
-		</table>
 		<br />
 		<div id="map_canvas"></div>
 		<div id="trajGmap"></div>
@@ -78,11 +64,10 @@ google.maps.event.addDomListener(window, 'load', function ()
 					<br />
 					<div id="staticPlot"></div>
 					<br />
-					<div id="redisServer"></div>
-					<br />
 					<div id="keySetter"></div>
 				</td>
 				<td valign="top">
+					<div id="redisServer"></div>
 					<div id="serverStatus"></div>
 				</td>
 			</tr>
@@ -93,20 +78,33 @@ google.maps.event.addDomListener(window, 'load', function ()
 		<script type="text/javascript">
 var ll = new labLogo();
 ll.show();
+
+var conf = new Object();
+conf.horizontal = 0;
+var rs = new redisServer(conf);
+rs.show();
+
 tg.show();
+
 var tp2 = new trajPlot2();
+tp2.php_comm.setServer(rs);
 tp2.show();
+
 var dp = new dynamicPlot();
 dp.show();
+
 var sp = new staticPlot();
+sp.php_comm.setServer(rs);
 sp.show();
-var rs = new redisServer();
-rs.show();
+
 var ks = new keySetter();
 ks.show();
+
 var sr = new safeRange();
 sr.show();
+
 var ss = new serverStatus();
+ss.php_comm.setServer(rs);
 ss.show();
 		</script>
 	</body>

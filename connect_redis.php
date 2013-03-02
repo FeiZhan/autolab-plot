@@ -33,7 +33,7 @@ function backup($key, $data)
 function get_robot_data()
 {
 	global $ROBOT_NAME, $client;
-	//time x y voltage current | self-set parameters: valid
+	//time x y voltage current | (self-set parameters) valid
 	foreach ($ROBOT_NAME as $i)
 	{
 		$data = "1";
@@ -42,9 +42,30 @@ function get_robot_data()
 		echo $ret.", ";
 	}
 }
+//[todo] more functions for generating data should be added
 function generate_data()
 {
-	//[todo]
+	$i = 0;
+	// if the key is valid
+	while ($_GET["key".$i] != undefined && $_GET["key".$i] != null && $_GET["key".$i] != "")
+	{
+		$value = $_GET["value".$i];
+		// if it is the code
+		if (substr($_GET["value".$i], 0, 3) == "@@@")
+		{
+			$code = substr($_GET["value".$i], 3);
+			if(is_null($code) || "" == $code || ! function_exists ($code))
+			{
+				$value = $code;
+			} else
+			{
+				$value = $code($client->get($_GET["key".$i]));
+			}
+		}
+		$client->set($_GET["key".$i], $value);
+		echo $_GET["key".$i].": ".$client->get($_GET["key".$i]).", ";
+		++ $i;
+	}
 }
 function cal_energy()
 {
