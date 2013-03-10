@@ -19,6 +19,7 @@ It is written in HTML, Javascript, PHP, and a little of C++.
 The framework is as Figure \ref{hier}.
 I split the plot library and the method library apart in order to avoid large computation on webpage.
 The plot library is in charge of generating plots on a webpage, and the method library is for computation on a server.
+They communicate asynchronically.
 
 \begin{figure}
 \centering
@@ -39,6 +40,7 @@ Plot Library is utilized to generate various of plots and functional modules of 
 It is called by client webpages.
 phpComm is used to communicate with php program, and retrieve data from the server.
 The library is written in Javascript as a js file.
+In the directory, parameter.js and plot\_methods.js belong to this level.
 
 Lets take ``staticPlot'' class in plot\_methods.js as an example.
 First, create a new HTML file.
@@ -52,7 +54,7 @@ $<script src="plot\_methods.js"></script>$
 
 To reserve space for this plot, add the following code into $<body></body>$.
 
-$<div id="staticPlot"></div>$
+\item{<div id="staticPlot"></div>}
 
 To create a new static plot, add the following code into $<script></script>$.
 
@@ -67,10 +69,28 @@ Now, you can see the plot on this webpage.
 \subsection{Method Library Level}
 The method library is utilized to connect with databases and do some computation on the server.
 It is written in PHP, and called by plot library level.
-call\_method.php is called directly by a plot library object, and it calls call_method function in connect_redis.php to assign the corresponding method to call.
+In this directory, call\_method.php, parameter.php, and connect\_redis.php belong to this level.
+call\_method.php is called directly by a plot library object, and it calls call_method function in connect\_redis.php to assign the corresponding method to call.
 
-Lets take
+Lets take get\_robot\_data function as an example.
+In higher level, it is called by phpComm in plot\_methods.js asynchronically.
+It retrieves robot discription data from Redis server by
+\item{\$ret = \$client->get(\$i);}
+And send data back to webpage by
+\item{echo \$ret.", ";}
 
+\subsection{Databases}
+The recommend database to integrate with our system is Redis.
+The PHP codes in method library level communicate with Redis by predis library.
+A backup database is deployed in order to save old robot data.
+
+\subsection{Robots and Other Devices}
+Robots and other devices can communicate with our system via Redis.
+
+Lets take Chatterbox 18 as an example.
+First, we configure ROBOT\_NAME in plot\_methods.js and \$ROBOT\_NAME in connect\_redis.php to add ``cb18'' (without quotes, by default it is there).
+When the robot is running, it upload a string to Redis describing its status whose key is ``cb18'' (without quotes), and value is ``time x y voltage current'' (without quotes).
+The method library level codes read this key, and send it to webpages.
 
 \section{Installation}
 Autolab-plot is developed in Ubuntu 11.
@@ -78,17 +98,16 @@ Compatibility with other platforms is not tested.
 
 Install Apache and PHP first.
 Put the entire directory of Autolab-plot into the base directory for the web documents (default as /var/www).
+flot, jsDraw2DX, and predis libraries are within our package.
 Open a browser and lead to the corresponding url (default as localhost/autolab-plot).
 You can see a variety of plots there.
 
-If you want to connect with database and communicate with robots, please install Redis and configure the IP address of Autolab-plot.
+If you want to connect with database and communicate with robots, please install Redis and configure the IP address in Autolab-plot.
 
-\section{Files}
-\subsection{connect\_redis.php}
-It contains all the service functions that can be called by javascript
+\section{APIs}
+\subsection{Method Library Level}
 
-\subsection{call\_method.php}
-It is called by javascript programs, and calls "call\_method" method in order to parse the "method" parameter and call the corresponding function in PHP.
+\subsection{Method Library Level}
 
 \section{License}
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License version 3 as published by the Free Software Foundation.
