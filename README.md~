@@ -63,7 +63,6 @@ Trajectory plots on google map with data retrieved from Redis.
 You can see energy map, time map, and colorful trajectory representing inner state of the robot. You can follow any of the robots. If you click on a grid in energy map or time map, you can see the data for that grid.
 The data for each robot is from Redis. The key is the name of the robot (only cb18, cb01, pi01 available). The value follows the format "time x y voltage current" (without quotation mark).
 If you use "data generator" (the first link in the front page), put "cb18" (without quotation mark) as key, and "@@@field_robot" (without quotation mark, note not @@@random_robot) as value, you can see the trajectory on the google map is moving.
-
 Suggestion
 =========================
 The website is still under construction. If you find bugs, or feel hard to understand the description with my poor English, please contact me [fzhan at sfu dot ca]. I apologize for any inconvience.
