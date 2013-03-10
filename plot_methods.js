@@ -1,5 +1,5 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01"];
+var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01"], LABEL = ["frame", "x", "y", "voltage", "current"];
 var phpComm = function (conf)
 {
 	this.receive = "";
@@ -101,6 +101,57 @@ document.getElementById(self.send_text).innerHTML = "send: " + file + ".php?" + 
 		this.send_time = new Date().getTime();
 	}
 }
+var robotData = function (conf)
+{
+	this.debug = "debug";
+	this.php_comm = new phpComm();
+	this.timeout = 300;
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+document.getElementById(this.debug).innerHTML = "debug: " + key;
+	}
+	var label = ["frame", "x", "y", "voltage", "current"];
+	var robot_data = new Object();
+	var self = this;
+	this.getAllRobots = function ()
+	{
+		return robot_data;
+	}
+	this.getRobot = function (name)
+	{
+		return robot_data[name];
+	}
+	this.getData = function (robot, data)
+	{
+		if (! (robot in robot_data) || ! (data in robot_data[robot]))
+		{
+			return NaN;
+		}
+		return robot_data[robot][data];
+	}
+	var update = function ()
+	{
+		self.php_comm.commPhp("call_method", "method=get_robot_data");
+		var robot = self.php_comm.getRec().split(", ");
+		for (var i in robot)
+		{
+			var tmp = robot[i].split(" ");
+			var robot_tmp = new Object();
+			for (var j in tmp)
+			{
+				robot_tmp[label[j]] = parseFloat(tmp[j]);
+			}
+			robot_data[ROBOT_NAME[i]] = robot_tmp;
+		}
+		setTimeout(update, self.timeout);
+	}
+	update();
+}
 var labLogo = function (conf)
 {
 	this.canvas = "labLogo";
@@ -136,6 +187,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 			html += 
 				'<table border="1" align="' + this.align + '" width="' + this.width + '">' +
 					'<tr align="' + this.align + '">' +
+						'<td><a href="./index.html">index</a></td>' +
 						'<td><a href="./status.html">status</a></td>' +
 						'<td><a href="./data_generator.html">data generator</a></td>' +
 						'<td><a href="./dataparser/index.html">data parser</a></td>' +
@@ -534,7 +586,7 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		var html =
 			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
 			'<div align="' + this.align + '"><form>' +
-				'key:<input type="text" name="key" value="' + this.key + '" />' +
+				'key<input type="text" name="key" value="' + this.key + '" />' +
 				'<input type="button" value="submit" />' +
 			'</form></div>';
 		document.getElementById(this.canvas).innerHTML = html;
@@ -549,6 +601,148 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		this.update();
 	}
 }
+var historicPlot = function (conf)
+{
+	this.canvas = "historicPlot";
+	this.placeholder = "hp_placeholder";
+	this.width = "100%";
+	this.height = "300px";
+	this.align = "center";
+	this.key = "";
+	this.debug = "debug";
+	this.timeout = 300;
+	this.max_points = 200;
+	this.php_comm = new phpComm();
+	this.option = {
+		series: {
+			lines: {show: true},
+			points: {show: true}
+		},
+		crosshair: {mode: "x"},
+		grid: {
+			show: true,
+			hoverable: true,
+			autoHighlight: false
+		}};
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+document.getElementById(this.debug).innerHTML = "debug: " + key;
+	}
+	this.last_ret = "";
+	var self = this;
+	this.update = function()
+	{
+		var plot = $.plot("#" + this.placeholder, [[]], this.option);
+		// update the plot periodically in order to plot the data from Redis
+		function plot_update()
+		{
+			var rec = self.php_comm.getRec();
+			if (rec != self.last_ret)
+			{
+				// we have new data from Redis
+				this.last_ret = rec;
+				var tmp = rec.split(", ");
+				var data = new Array();
+				var tmp2 = tmp[0].split(" ");
+				for (var j = 2; j < tmp2.length; ++ j)
+				{
+					data.push({label: LABEL[j - 1], data: new Array()})
+				}
+				for (var i in tmp)
+				{
+					if (i > self.max_points)
+						break;
+					tmp2 = tmp[i].split(" ");
+					for (var j = 2; j < tmp2.length; ++ j)
+					{
+						var tmp3 = parseFloat(tmp2[j]);
+						if (tmp3 == undefined || isNaN(tmp3))
+						{
+							continue;
+						}
+						data[j - 2].data.push([i, tmp3]);
+					}
+				}
+				$.plot("#" + self.placeholder, data, self.option);
+			}
+			setTimeout(plot_update, self.timeout);
+		}
+		plot_update();
+	};
+	this.show = function ()
+	{
+		var html =
+			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
+			'<div align="' + this.align + '"><form>' +
+				'robot<input type="text" name="robot" value="cb18" />' +
+				'year<input type="text" name="year" value="2013" />' +
+				'month<input type="text" name="month" value="Mar" />' +
+				'day<input type="text" name="day" value="1" />' +
+				'hour<input type="text" name="hour" value="0" />' +
+				'minute<input type="text" name="minute" value="0" />' +
+				'second<input type="text" name="second" value="0" />' +
+				'duration (s)<input type="text" name="duration" value="3600" />' +
+				'<input type="button" value="submit" />' +
+			'</form></div>';
+		document.getElementById(this.canvas).innerHTML = html;
+		var input_array = document.getElementById(this.canvas).getElementsByTagName("input")
+		input_array[input_array.length - 1].onclick = function ()
+		{
+			var cmd = "&robot=" + this.form.robot.value + "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value + "&duration=" + this.form.duration.value;
+			self.php_comm.commPhp("call_method", "method=historicData" + cmd);
+		}
+		this.update();
+	}
+}
+var timeTravel = function (conf)
+{
+	this.canvas = "timeTravel";
+	this.align = "center";
+	this.key = "";
+	this.debug = "debug";
+	this.timeout = 300;
+	this.php_comm = new phpComm();
+	for (var key in conf)
+	{
+		if (typeof(this[key]) === "undefined")
+		{
+			continue;
+		}
+		this[key] = conf[key];
+document.getElementById(this.debug).innerHTML = "debug: " + key;
+	}
+	var self = this, cmd = "";
+	this.update = function()
+	{
+		self.php_comm.commPhp("call_method", "method=timeTravel" + cmd);
+		setTimeout(self.update, self.timeout);
+	};
+	this.show = function ()
+	{
+		var html =
+			'<div align="' + this.align + '"><form>' +
+				'year<input type="text" name="year" value="2013" />' +
+				'month<input type="text" name="month" value="Mar" />' +
+				'day<input type="text" name="day" value="1" />' +
+				'hour<input type="text" name="hour" value="0" />' +
+				'minute<input type="text" name="minute" value="0" />' +
+				'second<input type="text" name="second" value="0" />' +
+				'<input type="button" value="submit" />' +
+			'</form></div>';
+		document.getElementById(this.canvas).innerHTML = html;
+		var input_array = document.getElementById(this.canvas).getElementsByTagName("input")
+		input_array[input_array.length - 1].onclick = function ()
+		{
+			cmd = "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value;
+			self.update();
+		}
+	}
+}
 var trajPlot1 = function (conf)
 {
 	this.canvas = "trajPlot1";
@@ -560,7 +754,7 @@ var trajPlot1 = function (conf)
 	this.min = 0;
 	this.max = 100;
 	this.debug = "debug";
-	this.php_comm = new phpComm();
+	this.robot_data = new robotData();
 	this.option = {
 		series: {
 			shadowSize: 0,
@@ -622,12 +816,8 @@ var trajPlot1 = function (conf)
 		// update plots periodically
 		function plot_update()
 		{
-			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			var tmp = self.php_comm.getRec().split(", ");
-			tmp = tmp[0];
-			tmp = tmp.split(" ");
-			pos[0] = parseFloat(tmp[1]);
-			pos[1] = parseFloat(tmp[2]);
+			pos[0] = self.robot_data.getData("cb01", "x");
+			pos[1] = self.robot_data.getData("cb01", "y");
 			plot.setData([ getData() ]);
 			plot.draw();
 			setTimeout(plot_update, self.timeout);
@@ -655,6 +845,7 @@ var trajPlot2 = function (conf)
 	this.min = 0;
 	this.max = 100;
 	this.php_comm = new phpComm();
+	this.robot_data = new robotData();
 	this.debug = "debug";
 	for (var key in conf)
 	{
@@ -728,12 +919,8 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		}
 		function plot_update()
 		{
-			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			var tmp = self.php_comm.getRec().split(", ");
-			tmp = tmp[0];
-			tmp = tmp.split(" ");
-			pos[0] = parseFloat(tmp[1]);
-			pos[1] = parseFloat(tmp[2]);
+			pos[0] = self.robot_data.getData("cb01", "x");
+			pos[1] = self.robot_data.getData("cb01", "y");
 			getData();
 			pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
 			body.remove();
@@ -773,7 +960,7 @@ var dynamicPlot = function (conf)
 	this.debug = "debug";
 	this.total_points = 100;
 	this.timeout = 300;
-	this.php_comm = new phpComm();
+	this.robot_data = new robotData();
 	this.option = {
 		// drawing is faster without shadows
 		series: {shadowSize: 0, lines: {show: true} },
@@ -790,10 +977,11 @@ var dynamicPlot = function (conf)
 		this[key] = conf[key];
 document.getElementById(this.debug).innerHTML = "debug: " + key;
 	}
+	var label = ["frame", "x", "y", "voltage", "current"];
 	var self = this;
 	this.update = function ()
 	{
-		var label = ["frame", "x", "y", "voltage", "current"], data_ret = [];
+		var data_ret = new Array();
 		for (var i = 0; i < label.length; ++ i)
 		{
 			data_ret[i] = 0;
@@ -806,11 +994,9 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		}
 		function getData()
 		{
-			self.php_comm.commPhp("call_method", "method=get_robot_data");
-			var ret = self.php_comm.getRec().split(" ");
-			for (var i = 0; i < ret.length - 1; ++ i)
+			for (var i = 0; i < label.length; ++ i)
 			{
-				data_ret[i] = parseFloat(ret[i]);
+				data_ret[i] = self.robot_data.getData("cb18", label[i]);
 			}
 			var cnt = -1;
 			for (i in dataset)
@@ -977,6 +1163,7 @@ var trajGmap = function (conf)
 	this.debug = "debug";
 	this.timeout = 300;
 	this.mv_php_comm = new phpComm();
+	this.robot_data;// = new robotData();
 	this.grid_php_comm = new phpComm();
 	this.map_options =
 	{

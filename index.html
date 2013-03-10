@@ -42,6 +42,7 @@ google.maps.event.addDomListener(window, 'load', function ()
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
 				<td width="70%" align="center" valign="top">
+					<div id="timeTravel"></div>
 					<ul align="center">
 						<li style="display:inline;margin:3%;">
 							<a href="?robot=1">robot 1</a>
@@ -63,6 +64,8 @@ google.maps.event.addDomListener(window, 'load', function ()
 					<hr />
 					<br />
 					<div id="staticPlot"></div>
+					<br />
+					<div id="historicPlot"></div>
 					<br />
 					<div id="keySetter"></div>
 				</td>
@@ -86,18 +89,26 @@ rs.show();
 
 tg.show();
 
+var tc = new timeTravel();
+tc.show();
+
 var tp2 = new trajPlot2();
-tp2.php_comm.setServer(rs);
+tp2.robot_data.php_comm.setServer(rs);
 tp2.show();
 
 var dp = new dynamicPlot();
+dp.robot_data.php_comm.setServer(rs);
 dp.show();
 
 var sp = new staticPlot();
 sp.php_comm.setServer(rs);
 sp.show();
 
+var hp = new historicPlot();
+hp.show();
+
 var ks = new keySetter();
+ks.php_comm.setServer(rs);
 ks.show();
 
 var sr = new safeRange();

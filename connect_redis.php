@@ -22,12 +22,96 @@ function status()
 		echo $key." ".$value.", ";
 	}
 }
-// cannot put bak_server variables here
+function findTime($from, $to)
+{
+	//[todo] binary search for the right time to travel
+}
+function historicData()
+{
+	global $bak_client;
+	$year = is_numeric($_GET["year"]) ? $_GET["year"] : "2013";
+	$month = $_GET["month"];
+	$day = is_numeric($_GET["day"]) ? $_GET["day"] : "1";
+	$hour = is_numeric($_GET["hour"]) ? $_GET["hour"] : "0";
+	$minute = is_numeric($_GET["minute"]) ? $_GET["minute"] : "0";
+	$second = is_numeric($_GET["second"]) ? $_GET["second"] : "0";
+	$from = strtotime($day." ".$month." ".$year." ".$hour.":".$minute.":".$second);
+	$to = $from + intval($_GET["duration"]);
+	$key = $_GET["robot"]."-bak";
+	$length = - $bak_client->llen($key);
+	$find_flag = false;
+	for ($i = -1; $i > $length; -- $i)
+	{
+		$time = $bak_client->lrange($key, $i, $i);
+		$time = explode(" ", $time[0]);
+		$time = $time[0];
+		if ($time >= $from && $time <= $to)
+		{
+			$find_flag = true;
+		}
+		else if ($time < $from)
+		{
+			break;
+		}
+	}
+	if ($find_flag)
+	{
+		$count = 0;
+		for ($j = $i; $j < 0; ++ $j)
+		{
+			++ $count;
+			$tmp = $bak_client->lrange($key, $j, $j);
+			echo $tmp[0].", ";
+			if ($count > 100)
+				break;
+		}
+	}
+}
+function timeTravel()
+{
+	global $bak_client, $ROBOT_NAME;
+	$year = is_numeric($_GET["year"]) ? $_GET["year"] : "2013";
+	$month = $_GET["month"];
+	$day = is_numeric($_GET["day"]) ? $_GET["day"] : "1";
+	$hour = is_numeric($_GET["hour"]) ? $_GET["hour"] : "0";
+	$minute = is_numeric($_GET["minute"]) ? $_GET["minute"] : "0";
+	$second = is_numeric($_GET["second"]) ? $_GET["second"] : "0";
+	$from = strtotime($day." ".$month." ".$year." ".$hour.":".$minute.":".$second);
+	foreach ($ROBOT_NAME as $i)
+	{
+		$key = $i."-bak";
+		$length = - $bak_client->llen($key);
+		$find_flag = false;
+		for ($j = -1; $j > $length; -- $j)
+		{
+			$time = $bak_client->lrange($key, $j, $j);
+			$time = explode(" ", $time[0]);
+			$time = $time[0];
+			if ($time >= $from)
+			{
+				$find_flag = true;
+			}
+			else if ($time < $from)
+			{
+				break;
+			}
+		}
+		if ($find_flag)
+		{
+			$tmp = $bak_client->lrange($key, $j + 1, $j + 1);
+			echo $tmp[0].", ";
+			//$client->set($i, $tmp[0]);
+		}
+	}
+}
+// cannot put bak_server variables inside
 function backup($key, $data)
 {
 	global $bak_client;
+	$old = $bak_client->lrange($key."-bak", -1, -1);
+	echo $old[0];
 	// if change - with _, it does not work.
-	$bak_client->rpush($key."-bak", $data);
+	$bak_client->rpushx($key."-bak", time()." ".$data);
 	//echo $bak_client->llen($key."-bak"); // test if it works
 }
 function get_robot_data()
@@ -38,7 +122,7 @@ function get_robot_data()
 	{
 		$data = "1";
 		$ret = $client->get($i);
-		//backup($i, $ret);
+		backup($i, $ret);
 		echo $ret.", ";
 	}
 }
