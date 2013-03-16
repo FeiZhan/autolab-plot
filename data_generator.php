@@ -5,11 +5,18 @@ require __DIR__.'/predis/autoload.php';
 require __DIR__.'/parameter.php';
 $OFFSET = .001;
 $begin = microtime(true);
-$single_server = array(
-    'host'	=>	$_GET["host"],
-    'port'	=>	$_GET["port"]
+$host = $HOST;
+$port = $PORT;
+if (! is_null($_GET["host"]) && ! is_null($_GET["port"]))
+{
+	$host = $_GET["host"];
+	$port = $_GET["port"];
+}
+$server = array(
+	'host'	=>	$host,
+	'port'	=>	$port
 );
-$client = new Predis\Client($single_server);
+$client = new Predis\Client($server);
 // generate a random value
 function random_value()
 {
@@ -39,8 +46,8 @@ function field_robot($client_value)
 	return ($last_time+1)." ".$x." ".$y." ".(rand(0, 10000) / 100)." ".(rand(0, 10000) / 100);
 }
 // test the duration to communicate with Redis
-$client->set("delay_test", $_GET["time"]);
-echo "time ".$client->get("delay_test").", ";
+//$client->set("delay_test", $_GET["time"]);
+//echo "time ".$client->get("delay_test").", ";
 //echo round(microtime(true) * 1000 - $_GET["time"]);
 
 // suppose there are 10 robots

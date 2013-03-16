@@ -22,9 +22,34 @@ function status()
 		echo $key." ".$value.", ";
 	}
 }
+function getNames()
+{
+	global $client;
+	$len = $client->llen("robotname");
+	$tmp = $client->lrange("robotname", 0, $len);
+	for ($i = 0; $i < $len; ++ $i)
+	{
+		echo $tmp[$i]." ";
+	}
+}
 function findTime($from, $to)
 {
 	//[todo] binary search for the right time to travel
+}
+function getOldData()
+{
+	global $bak_client;
+	$key = $_GET["robot"]."-bak";
+	$len = - $bak_client->llen($key);
+	if ($len < -100)
+	{
+		$len = -100;
+	}
+	$tmp = $bak_client->lrange($key, -$len, -1);
+	for ($i = 0; $i < - $len; ++ $i)
+	{
+		echo $tmp[$i].", ";
+	}
 }
 function historicData()
 {
@@ -100,6 +125,7 @@ function timeTravel()
 		{
 			$tmp = $bak_client->lrange($key, $j + 1, $j + 1);
 			echo $tmp[0].", ";
+			//[todo] delete the beginning timestamp, assign different values from then
 			//$client->set($i, $tmp[0]);
 		}
 	}
@@ -109,7 +135,7 @@ function backup($key, $data)
 {
 	global $bak_client;
 	$old = $bak_client->lrange($key."-bak", -1, -1);
-	echo $old[0];
+	//echo $old[0];
 	// if change - with _, it does not work.
 	$bak_client->rpushx($key."-bak", time()." ".$data);
 	//echo $bak_client->llen($key."-bak"); // test if it works
@@ -122,7 +148,7 @@ function get_robot_data()
 	{
 		$data = "1";
 		$ret = $client->get($i);
-		backup($i, $ret);
+		//backup($i, $ret);
 		echo $ret.", ";
 	}
 }

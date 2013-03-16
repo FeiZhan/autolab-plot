@@ -11,11 +11,11 @@
 \maketitle
 
 \section{Introduction}
-A website to demonstrate the figures and trajectories of different robots in Autonomy Lab at Simon Fraser University.
+Autolab-plot is a website to demonstrate the figures and trajectories of different robots in Autonomy Lab at Simon Fraser University.
 It has been rewritten into libraries in order to facilitate extension.
 It is written in HTML, Javascript, PHP, and a little of C++.
 
-\section{framework}
+\section{Framework and Examples}
 The framework is as Figure \ref{hier}.
 I split the plot library and the method library apart in order to avoid large computation on webpage.
 The plot library is in charge of generating plots on a webpage, and the method library is for computation on a server.
@@ -54,7 +54,7 @@ $<script src="plot\_methods.js"></script>$
 
 To reserve space for this plot, add the following code into $<body></body>$.
 
-\item{<div id="staticPlot"></div>}
+$<div id="staticPlot"></div>$
 
 To create a new static plot, add the following code into $<script></script>$.
 
@@ -70,14 +70,17 @@ Now, you can see the plot on this webpage.
 The method library is utilized to connect with databases and do some computation on the server.
 It is written in PHP, and called by plot library level.
 In this directory, call\_method.php, parameter.php, and connect\_redis.php belong to this level.
-call\_method.php is called directly by a plot library object, and it calls call_method function in connect\_redis.php to assign the corresponding method to call.
+call\_method.php is called directly by a plot library object, and it calls call\_method function in connect\_redis.php to assign the corresponding method to call.
 
 Lets take get\_robot\_data function as an example.
 In higher level, it is called by phpComm in plot\_methods.js asynchronically.
 It retrieves robot discription data from Redis server by
-\item{\$ret = \$client->get(\$i);}
+
+$\$ret = \$client->get(\$i);$
+
 And send data back to webpage by
-\item{echo \$ret.", ";}
+
+$echo \$ret.", ";$
 
 \subsection{Databases}
 The recommend database to integrate with our system is Redis.

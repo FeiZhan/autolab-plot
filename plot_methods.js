@@ -1,59 +1,89 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01"], LABEL = ["frame", "x", "y", "voltage", "current"];
-var phpComm = function (conf)
+var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"], LABEL = ["frame", "x", "y", "voltage", "current"];
+/**
+ * @class create a php communication
+ */
+var phpComm = function ()
 {
+	/**
+	 * received string
+	 * @public
+	 */
 	this.receive = "";
-	this.file = "";
+	/**
+	 * PHP file name to be called
+	 * @public
+	 */
+	this.file = "call_method";
+	/**
+	 * cmd to be transmitted to PHP
+	 * @public
+	 */
 	this.cmd = "";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * the placeholder of receive info
+	 * @public
+	 */
 	this.rec_text = "receive";
+	/**
+	 * the placeholder of send info
+	 * @public
+	 */
 	this.send_text = "send";
-	this.send_time = "";
-	this.rec_time = "";
-	this.host = "192.168.1.120";
-	this.port = "6379";
+	/**
+	 * host name
+	 * @public
+	 */
+	this.host = "";
+	/**
+	 * port name
+	 * @public
+	 */
+	this.port = "";
+	/**
+	 * server object
+	 * @public
+	 */
 	this.server;
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-	}
+	/**
+	 * send and receive time in order to test the delay of the server
+	 * @private
+	 */
+	var send_time = [0], rec_time = 0;
 	var self = this;
-	this.setHost = function (host, port)
-	{
-		this.host = host;
-		this.port = port;
-	}
-	this.setServer = function (rs)
-	{
-		if (typeof rs.getHost != "function")
-		{
-			alert("error");
-			return;
-		}
-		this.server = rs;
-	}
-	this.getRec = function ()
-	{
-		return this.receive;
-	}
-	this.clearRec = function ()
-	{
-		this.receive = "";
-	}
-	this.getDelay = function ()
+	/**
+	 * how long since the latest time of receiving data, in order to test if the server works
+	 * @public
+	 */
+	this.getUnrecTime = function ()
 	{
 		var now = new Date().getTime();
-		if (now - self.rec_time > 1000)
-		{
-			return null;
-		}
-		return this.delay;
+		return now - rec_time;
 	}
-	this.commPhp = function (file, cmd)
+	/**
+	 * get the delay of the server
+	 * @public
+	 */
+	this.getDelay = function ()
+	{
+		if (send_time.length > 0 && rec_time > 0)
+		{
+			return rec_time - send_time[0];
+		} else
+		{
+			return 0;
+		}
+	}
+	/**
+	 * communicate with PHP via XMLHttpRequest
+	 * @public
+	 */
+	this.commPhp = function ()
 	{
 		var xmlhttp;
 		if (window.XMLHttpRequest)
@@ -68,64 +98,175 @@ var phpComm = function (conf)
 		}
 		xmlhttp.onreadystatechange = function ()
 		{
+			// receive data
 			if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
 			{
-				self.rec_time = new Date().getTime();
-				self.delay = self.rec_time - self.send_time;
+				// record the receiving time
+				rec_time = new Date().getTime();
+				// remove old sending time
+				if (send_time.length > 1)
+				{
+					send_time.shift();
+				}
+				// obtain receiving data
 				self.receive = xmlhttp.responseText;
-document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
+				document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
 			}
 		}
-		if (cmd == "")
+		// if the server is assigned, send the host and port to PHP
+		if (typeof self.server != "undefined")
 		{
-			if (typeof this.server != "undefined")
-			{
-				cmd = "host=" + this.server.getHost() + "&port=" + this.server.getPort();
-			} else
-			{
-				cmd = "host=" + this.host + "&port=" + this.port;
-			}
+			self.cmd += "&host=" + self.server.host + "&port=" + self.server.port;
 		} else
 		{
-			if (typeof this.server != "undefined")
+			// if the public values are assigned, send them to PHP
+			if (typeof self.host != "undefined" && "" != self.host)
 			{
-				cmd += "&host=" + this.server.getHost() + "&port=" + this.server.getPort();
-			} else
+				self.cmd += "&host=" + self.host;
+			}
+			if (typeof self.port != "undefined" && "" != self.port)
 			{
-				cmd += "&host=" + this.host + "&port=" + this.port;
+				self.cmd += "&port=" + self.port;
 			}
 		}
-		xmlhttp.open("GET", file + ".php?" + cmd, true);
-document.getElementById(self.send_text).innerHTML = "send: " + file + ".php?" + cmd;
+		// remove the beginning &
+		if ("&" == self.cmd.charAt(0))
+		{
+			self.cmd = self.cmd.substr(1);
+		}
+		xmlhttp.open("GET", self.file + ".php?" + self.cmd, true);
+		document.getElementById(self.send_text).innerHTML = "send: " + self.file + ".php?" + self.cmd;
 		xmlhttp.send();
-		this.send_time = new Date().getTime();
+		// record the sending time
+		send_time.push(new Date().getTime());
 	}
 }
-var robotData = function (conf)
+/**
+ * @class get all the names of robots
+ */
+var robotName = function ()
 {
-	this.debug = "debug";
+	/**
+	 * create a php communication
+	 * @public
+	 */
 	this.php_comm = new phpComm();
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
+	this.debug = "debug";
+	/**
+	 * the timeout between two communications (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	for (var key in conf)
+	var name = new Array();
+	var self = this;
+	/**
+	 * the amount of robot names
+	 * @public
+	 */
+	this.count = function ()
 	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
+		return name.length;
 	}
-	var label = ["frame", "x", "y", "voltage", "current"];
+	/**
+	 * get robot names
+	 * @public
+	 */
+	this.getNames = function ()
+	{
+		return name;
+	}
+	/**
+	 * update robot names periodically
+	 * @public
+	 */
+	this.update = function ()
+	{
+		self.php_comm.cmd = "method=getNames";
+		self.php_comm.commPhp();
+		var tmp = self.php_comm.receive.split(" ");
+		for (var i in tmp)
+		{
+			// invalid robot name
+			if (" " == tmp[i] || "" == tmp[i])
+				continue;
+			var flag = false;
+			for (var j in name)
+			{
+				// duplicate
+				if (tmp[i] == name[j])
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (false == flag)
+			{
+				name.push(tmp[i]);
+			}
+		}
+		setTimeout(self.update, self.timeout);
+	}
+}
+/**
+ * @class get all the data of robots
+ */
+var robotData = function ()
+{
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
+	this.debug = "debug";
+	/**
+	 * create a php communication
+	 * @public
+	 */
+	this.php_comm = new phpComm();
+	/**
+	 * the timeout between two communications (ms)
+	 * @public
+	 */
+	this.timeout = 300;
+	/**
+	 * robot name from robotName
+	 * @public
+	 */
+	this.rn;
 	var robot_data = new Object();
 	var self = this;
+	/**
+	 * get the data of all robots
+	 * @public
+	 */
 	this.getAllRobots = function ()
 	{
 		return robot_data;
 	}
-	this.getRobot = function (name)
+	/**
+	 * get the data of a specified robot
+	 * @public
+	 * @param robot the name of the robot
+	 */
+	this.getRobot = function (robot)
 	{
-		return robot_data[name];
+		if (robot in robot_data)
+		{
+			return robot_data[robot];
+		} else
+		{
+			return undefined;
+		}
 	}
+	/**
+	 * get the data of a specified robot and a specified key
+	 * @public
+	 * @param robot the name of the robot
+	 * @param data the specified data
+	 */
 	this.getData = function (robot, data)
 	{
 		if (! (robot in robot_data) || ! (data in robot_data[robot]))
@@ -134,59 +275,111 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		}
 		return robot_data[robot][data];
 	}
-	var update = function ()
+	/**
+	 * update robot data periodically
+	 * @public
+	 */
+	this.update = function ()
 	{
-		self.php_comm.commPhp("call_method", "method=get_robot_data");
-		var robot = self.php_comm.getRec().split(", ");
+		// if robot name is not defined, define one
+		if (typeof self.rn == "undefined")
+		{
+			self.rn = new robotName();
+			self.rn.update();
+		}
+		var name = self.rn.getNames();
+		self.php_comm.cmd = "method=get_robot_data";
+		self.php_comm.commPhp();
+		var robot = self.php_comm.receive.split(", ");
+		// for each robot
 		for (var i in robot)
 		{
+			// more robots than names, ignore the rest robots
+			if (name.length <= i)
+			{
+				break;
+			}
 			var tmp = robot[i].split(" ");
 			var robot_tmp = new Object();
+			// for each value
 			for (var j in tmp)
 			{
-				robot_tmp[label[j]] = parseFloat(tmp[j]);
+				robot_tmp[LABEL[j]] = parseFloat(tmp[j]);
 			}
-			robot_data[ROBOT_NAME[i]] = robot_tmp;
+			robot_data[name[i]] = robot_tmp;
 		}
-		setTimeout(update, self.timeout);
+		setTimeout(self.update, self.timeout);
 	}
-	update();
 }
-var labLogo = function (conf)
+/**
+ * @class generate a lab logo
+ */
+var labLogo = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "labLogo";
+	/**
+	 * @public
+	 */
 	this.border = 0;
+	/**
+	 * @public
+	 */
 	this.width = "100%";
+	/**
+	 * @public
+	 */
 	this.align = "center";
+	/**
+	 * the width percentage of the logo
+	 * @public
+	 */
 	this.logo_width = "30%";
+	/**
+	 * the path and file name of the logo
+	 * @public
+	 */
 	this.src = "logo.png";
+	/**
+	 * the title of this page
+	 * @public
+	 */
 	this.title = "Autolab Demonstration";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * if we need subheading
+	 * @public
+	 */
 	this.subheading = 1;
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === 'undefined')
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
 	var self = this;
+	/**
+	 * show the object
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html = 
-			'<table border="' + this.border + '" width="' + this.width + '" align="' + this.align + '">' +
+			'<table border="' + self.border + '" width="' + self.width + '" align="' + self.align + '">' +
 				'<tr>' +
-					'<td width="' + this.logo_width + '"><img src="' + this.src + '" alt="logo"></td>' +
-					'<td><h1 align="' + this.align + '">' + this.title + '</h1></td>' +
+					'<td width="' + self.logo_width + '"><img src="' + self.src + '" alt="logo"></td>' +
+					'<td><h1 align="' + self.align + '">' + self.title + '</h1></td>' +
 				'</tr>' +
 			'</table>';
 		if (self.subheading)
 		{
 			html += 
-				'<table border="1" align="' + this.align + '" width="' + this.width + '">' +
-					'<tr align="' + this.align + '">' +
+				'<table border="1" align="' + self.align + '" width="' + self.width + '">' +
+					'<tr align="' + self.align + '">' +
+						/**
+						 * \todo change the following links into suitable ones.
+						 */
 						'<td><a href="./index.html">index</a></td>' +
 						'<td><a href="./status.html">status</a></td>' +
 						'<td><a href="./data_generator.html">data generator</a></td>' +
@@ -201,53 +394,69 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					'</tr>' +
 				'</table>';
 		}
-		document.getElementById(this.canvas).innerHTML = html;
+		document.getElementById(self.canvas).innerHTML = html;
 	}
 }
-var redisServer = function (conf)
+/**
+ * @class generate a redis server control
+ */
+var redisServer = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "redisServer";
+	/**
+	 * @public
+	 */
 	this.border = 0;
+	/**
+	 * @public
+	 */
 	this.align = "center";
+	/**
+	 * the default value of host
+	 * @public
+	 */
 	this.host = HOST;
+	/**
+	 * the default value of port
+	 * @public
+	 */
 	this.port = PORT;
+	/**
+	 * the default value of rate
+	 * @public
+	 */
 	this.rate = 1000;
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * if to put it horizontally
+	 * @public
+	 */
 	this.horizontal = 1;
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
 	var self = this;
-	this.getHost = function ()
-	{
-		return this.host;
-	}
-	this.getPort = function ()
-	{
-		return this.port;
-	}
-	this.getRate = function ()
-	{
-		return this.rate;
-	}
+	/**
+	 * show this object
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + this.border + '" align="' + this.align + '">';
+			'<table border="' + self.border + '" align="' + self.align + '">';
 		if (self.horizontal)
 		{
 			html +=
-				'<tr align="' + this.align + '">' +
+				'<tr align="' + self.align + '">' +
 					'<form>' +
-						'<td>host<input type="text" name="host" value="' + this.host + '" /></td>' +
-						'<td>port<input type="text" name="port" value="' + this.port + '" /></td>' +
-						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + this.rate + '" /></td>' +
+						'<td>host<input type="text" name="host" value="' + self.host + '" /></td>' +
+						'<td>port<input type="text" name="port" value="' + self.port + '" /></td>' +
+						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + self.rate + '" /></td>' +
 						'<td><input type="button" value="submit" /></td>' +
 					'</form>' +
 				'</tr>';
@@ -255,179 +464,287 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		{
 			html +=
 				'<form>' +
-					'<tr align="' + this.align + '">' +
-						'<td>host<input type="text" name="host" value="' + this.host + '" /></td>' +
+					'<tr align="' + self.align + '">' +
+						'<td>host<input type="text" name="host" value="' + self.host + '" /></td>' +
 					'</tr>' +
-					'<tr align="' + this.align + '">' +
-						'<td>port<input type="text" name="port" value="' + this.port + '" /></td>' +
+					'<tr align="' + self.align + '">' +
+						'<td>port<input type="text" name="port" value="' + self.port + '" /></td>' +
 					'</tr>' +
-					'<tr align="' + this.align + '">' +
-						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + this.rate + '" /></td>' +
+					'<tr align="' + self.align + '">' +
+						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + self.rate + '" /></td>' +
 					'</tr>' +
-					'<tr align="' + this.align + '">' +
+					'<tr align="' + self.align + '">' +
 						'<td><input type="button" value="submit" /></td>' +
 					'</tr>' +
 				'</form>';
 		}
 		html += '</table>';
-		document.getElementById(this.canvas).innerHTML = html;
-		document.getElementById(this.canvas).getElementsByTagName("input")[3].onclick = function ()
+		document.getElementById(self.canvas).innerHTML = html;
+		/**
+		 * assign callback function to submit button
+		 */
+		document.getElementById(self.canvas).getElementsByTagName("input")[3].onclick = function ()
 		{
 			self.host = this.form.host.value;
 			self.port = this.form.port.value;
 			self.rate = this.form.rate.value;
-document.getElementById(self.debug).innerHTML = "debug: " + self.host + " " + self.port + " " + self.rate;
 		}
 	}
 }
-var serverStatus = function (conf)
+/**
+ * @class generate a table of server status
+ */
+var serverStatus = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "serverStatus";
+	/**
+	 * @public
+	 */
 	this.border = 1;
+	/**
+	 * @public
+	 */
 	this.width = "60%";
+	/**
+	 * @public
+	 */
 	this.align = "center";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * the max number of status elements
+	 * @public
+	 */
 	this.max_count = 1000;
-	this.count = 1;
+	/**
+	 * the fixed number of status elements
+	 * @public
+	 */
+	this.fix_count = 20;
+	/**
+	 * create a php communication
+	 * @public
+	 */
 	this.php_comm = new phpComm();
+	/**
+	 * the timeout between two communications (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	this.db_status = ["delay"];
+	/**
+	 * the status names and count
+	 * @private
+	 */
 	var self = this;
-	this.update = function ()
+	/**
+	 * update the info periodically
+	 * @private
+	 */
+	var update = function ()
 	{
-		// empty the status array in order to adapt to a new server dynamically
-		//[bug] the received data does not change if we cannot connect the server.
-		self.count = 1;
-		self.db_status = ["delay"];
-		self.php_comm.commPhp("call_method", "method=status");
-		var data = self.php_comm.getRec().split(", ");
-		self.php_comm.clearRec();
-		document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML = 
-			'<tr align="' + self.align + '">' +
-				'<td><p>delay (ms)</p></td>' +
-				'<td><p>' + self.php_comm.getDelay() + '</p></td>' +
-			'</tr>';
-		for (var i = 0; i < data.length; ++ i)
+		var count = 0;
+		var db_status = new Array();
+		self.php_comm.cmd = "method=status";
+		self.php_comm.commPhp();
+		var data = self.php_comm.receive.split(", ");
+		// set the delay value
+		document.getElementById(self.canvas).getElementsByTagName("p")[0].innerHTML = "delay (ms)";
+		document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.php_comm.getDelay();
+		// if the server does not respond
+		if (self.php_comm.getUnrecTime() > 1000)
 		{
-			var key_value = data[i].split(" ");
-			if (key_value[0] == "")
+			var p = document.getElementById(self.canvas).getElementsByTagName("p");
+			for (var i = 3; i < p.length; i += 2)
 			{
-				continue;
+				p[i].innerHTML = "-";
 			}
-			var flag = false;
-			//for (var j = 0; j < self.db_status.length; ++ j)
-			//{
-				//if (key_value[0] == self.db_status[j])
-				//{
-					//var key_array = document.getElementsByTagName("p");
-					//for (var i = 0; i < key_array.length; ++ i)
-					//{
-						//if (key_array[i].innerHTML == key_value[0])
-						//{
-							//key_array[i+1].innerHTML = key_value[1];
-							//break;
-						//}
-					//}
-					//flag = true;
-					//break;
-				//}
-			//}
-			if (false == flag && self.count < self.max_count)
+		} else
+		{
+			for (var i = 0; i < data.length; ++ i)
 			{
-				++ self.count;
-				self.db_status.push(key_value[0]);
-				document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML += 
-					'<tr align="' + self.align + '">' +
-						'<td><p>' + key_value[0] + '</p></td>' +
-						'<td><p>' + key_value[1] + '</p></td>' +
-					'</tr>';
+				// reach max count or fix count if fix is set
+				if (count > self.max_count || (self.fix_count > 0 && count >= self.fix_count - 1))
+				{
+					break;
+				}
+				var key_value = data[i].split(" ");
+				if (key_value[0] == "")
+				{
+					continue;
+				}
+				var flag = false;
+				// search for each key
+				//for (var j = 0; j < self.db_status.length; ++ j)
+				//{
+					//if (key_value[0] == self.db_status[j])
+					//{
+						//var key_array = document.getElementsByTagName("p");
+						//for (var i = 0; i < key_array.length; ++ i)
+						//{
+							//if (key_array[i].innerHTML == key_value[0])
+							//{
+								//key_array[i+1].innerHTML = key_value[1];
+								//break;
+							//}
+						//}
+						//flag = true;
+						//break;
+					//}
+				//}
+				if (false == flag)
+				{
+					++ count;
+					db_status.push(key_value[0]);
+					document.getElementById(self.canvas).getElementsByTagName("p")[count * 2].innerHTML = key_value[0];
+					document.getElementById(self.canvas).getElementsByTagName("p")[count * 2 + 1].innerHTML = key_value[1];
+				}
 			}
 		}
-		setTimeout(self.update, self.timeout);
+		setTimeout(update, self.timeout);
 	}
+	/**
+	 * show this object and start the update
+	 * @public
+	 */
 	this.show = function ()
 	{
-		var html = '<table border="' + this.border + '" width="' + this.width + '" align="' + this.align + '"></table>';
-		document.getElementById(this.canvas).innerHTML = html;
-		self.update();
+		var html = '<table border="' + self.border + '" width="' + self.width + '" align="' + self.align + '">';
+		for (var i = 0; i < self.fix_count; ++ i)
+		{
+			html += '<tr align="' + self.align + '">' +
+						'<td><p></p></td>' +
+						'<td><p></p></td>' +
+					'</tr>';
+		}
+		html += '</table>';
+		document.getElementById(self.canvas).innerHTML = html;
+		update();
 	}
 }
-var keySetter = function (conf)
+/**
+ * @class generate the control of setting keys in the Redis
+ */
+var keySetter = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "keySetter";
+	/**
+	 * @public
+	 */
 	this.border = 1;
+	/**
+	 * @public
+	 */
 	this.align = "center";
+	/**
+	 * if with the heading
+	 * @public
+	 */
 	this.heading = 1;
+	/**
+	 * initial keys
+	 * @public
+	 */
 	this.init_key = ["cb18", "cb01", "last_time", "last_time_frame"];
+	/**
+	 * initial values
+	 * @public
+	 */
 	this.init_value = ["@@@field_robot", "@@@random_robot", "@@@clear", "@@@clear"];
-	this.key = new Array();
-	this.value = new Array();
+	/**
+	 * initial amout of lines
+	 * @public
+	 */
 	this.init_num = 8;
+	/**
+	 * default string of new key
+	 * @public
+	 */
 	this.new_key = "";
+	/**
+	 * default value of new key
+	 * @public
+	 */
 	this.new_value = "";
+	/**
+	 * if generate the explanations
+	 * @public
+	 */
 	this.meaning = 0;
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
-	this.rate = 1000;
+	/**
+	 * the timeout between two settings (ms)
+	 * @public
+	 */
+	this.timeout = 1000;
+	/**
+	 * create a php communication
+	 * @public
+	 */
 	this.php_comm = new phpComm();
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
+	var key = new Array(), value = new Array(), pause = false;
 	var self = this;
-	this.setRate = function (r)
+	/**
+	 * the callback of submit buttion
+	 * @private
+	 * @bug new buttons do not work
+	 */
+	var submitKey = function ()
 	{
-		this.rate = r;
-	}
-	this.submit_key = function ()
-	{
-		//[bug] new buttons do not work
 		var flag = false;
-		for (var i in self.key)
+		for (var i in key)
 		{
-			if (self.key[i] == this.form.key.value)
+			// if key exists
+			if (key[i] == this.form.key.value)
 			{
-				self.value[i] = this.form.value.value;
+				value[i] = this.form.value.value;
 				flag = true;
 				break;
 			}
 		}
+		// if key does not exist
 		if (false == flag)
 		{
-			self.key.push(this.form.key.value);
-			self.value[self.key.length - 1] = this.form.value.value;
+			key.push(this.form.key.value);
+			value[key.length - 1] = this.form.value.value;
 		}
 //document.getElementById(self.debug).innerHTML = "debug: " + this.form.key.value + this.form.value.value;
 	}
-	// add callback function to every submit button (the amount of those is not reliable)
-	this.add_submit_callback = function ()
+	/**
+	 * add callback function to every submit button (the amount of those is not reliable)
+	 * @private
+	 */
+	var addSubmitCallback = function ()
 	{
 		var button_array = document.getElementById(self.canvas).getElementsByTagName("input");
-		//[bug] why count?
-		var count = 0;
 		for (var i in button_array)
 		{
-			if (i != 0 && "button" == button_array[i].type)
+			// ignore addKey and pause buttons
+			if (i > 1 && "button" == button_array[i].type)
 			{
-				button_array[i].onclick = self.submit_key;
-				count += i;
+				button_array[i].onclick = submitKey;
 			}
 		}
 	}
-	this.addKey = function ()
+	/**
+	 * add callback function to addKey
+	 * @private
+	 */
+	var addKey = function ()
 	{
 		var html =
 			'<tr align="' + self.align + '">' +
@@ -439,42 +756,60 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 			'</tr>';
 		document.getElementById(self.canvas).getElementsByTagName("table")[0].innerHTML += html;
 		// the callback function has to be assigned again
-		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = self.addKey;
-		self.add_submit_callback();
-document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("tr").length;
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = addKey;
+		// add callback to pause
+		document.getElementById(self.canvas).getElementsByTagName("input")[1].onclick = function ()
+		{
+			pause = (0 == pause);
+		}
+		addSubmitCallback();
+//document.getElementById(self.debug).innerHTML = "debug: " + document.getElementById(self.canvas).getElementsByTagName("tr").length;
 	}
-	this.update = function ()
+	/**
+	 * send data periodically
+	 * @private
+	 */
+	var update = function ()
 	{
 		var data = "";
-		for (var i = 0; i < self.key.length; ++ i)
+		if (! pause)
 		{
-			if (self.key[i] != undefined && self.key[i] != null && self.key[i] != "")
+			for (var i = 0; i < key.length; ++ i)
 			{
-				data += "&key" + i + "=" + self.key[i] + "&value" + i + "=" + self.value[i];
+				if (typeof key[i] != "undefined" && key[i] != null && key[i] != "")
+				{
+					data += "&key" + i + "=" + key[i] + "&value" + i + "=" + value[i];
+				}
 			}
 		}
-		self.php_comm.commPhp("data_generator", data);
-		setTimeout(self.update, self.rate);
+		self.php_comm.file = "data_generator";
+		self.php_comm.cmd = data;
+		self.php_comm.commPhp();
+		setTimeout(update, self.timeout);
 	}
+	/**
+	 * show this object, add callbacks, and start to send data periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + this.border + '" align="' + this.align + '">';
-		if (this.heading)
+			'<table border="' + self.border + '" align="' + self.align + '">';
+		if (self.heading)
 		{
 			html +=
-				'<tr align="' + this.align + '">' +
+				'<tr align="' + self.align + '">' +
 					'<td>key<input type="button" value="add key" /></td>' +
-					'<td width="70%">value</td>' +
+					'<td width="70%">value<input type="button" value="pause" /></td>' +
 					'<td>submit</td>' +
 				'</tr>';
 		}
-		for (var i = 0; i < this.init_num; ++ i)
+		for (var i = 0; i < self.init_num; ++ i)
 		{
-			var key_tmp = (self.init_key.length > i) ? this.init_key[i] : "";
-			var value_tmp = (self.init_value.length > i) ? this.init_value[i] : "";
+			var key_tmp = (self.init_key.length > i) ? self.init_key[i] : "";
+			var value_tmp = (self.init_value.length > i) ? self.init_value[i] : "";
 			html +=
-					'<tr align="' + this.align + '">' +
+					'<tr align="' + self.align + '">' +
 						'<form>' +
 							'<td><input type="text" name="key" value="' + key_tmp + '" /></td>' +
 							'<td><input type="text" name="value" value="' + value_tmp + '" size="100%" /></td>' +
@@ -483,7 +818,7 @@ document.getElementById(self.debug).innerHTML = "debug: " + document.getElementB
 					'</tr>';
 		}
 		html += '</table>';
-		if (this.meaning)
+		if (self.meaning)
 		{
 			html += 
 				'<br />' +
@@ -514,105 +849,75 @@ document.getElementById(self.debug).innerHTML = "debug: " + document.getElementB
 					'</tr>' +
 				'</table>';
 		}
-		document.getElementById(this.canvas).innerHTML = html;
-		document.getElementById(this.canvas).getElementsByTagName("input")[0].onclick = self.addKey;
-		self.add_submit_callback();
-		self.update();
+		document.getElementById(self.canvas).innerHTML = html;
+		// add callback to addkey
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = addKey;
+		// add callback to pause
+		document.getElementById(self.canvas).getElementsByTagName("input")[1].onclick = function ()
+		{
+			pause = (0 == pause);
+		}
+		// add callback to each submit button
+		addSubmitCallback();
+		update();
 	}
 }
-var staticPlot = function (conf)
+/**
+ * @class a static plot of some values from Redis, or historical data of robots
+ */
+var staticPlot = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "staticPlot";
+	/**
+	 * the place to hold the plot
+	 * @public
+	 */
 	this.placeholder = "sp_placeholder";
+	/**
+	 * @public
+	 */
 	this.width = "100%";
+	/**
+	 * @public
+	 */
 	this.height = "300px";
+	/**
+	 * @public
+	 */
 	this.align = "center";
+	/**
+	 * default key value
+	 * @public
+	 */
 	this.key = "";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	this.php_comm = new phpComm();
-	this.option = {
-		series: {
-			lines: {show: true},
-			points: {show: true}
-		},
-		crosshair: {mode: "x"},
-		grid: {
-			show: true,
-			hoverable: true,
-			autoHighlight: false
-		}};
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	this.last_ret = "";
-	var self = this;
-	this.update = function()
-	{
-		var plot = $.plot("#" + this.placeholder, [[]], this.option);
-		// update the plot periodically in order to plot the data from Redis
-		function plot_update()
-		{
-			var rec = self.php_comm.getRec();
-			if (rec != self.last_ret)
-			{
-				// we have new data from Redis
-				this.last_ret = rec;
-				var tmp = rec.split(" ");
-				var data = new Array();
-				for (var i = 0; i < tmp.length; ++ i)
-				{
-					var tmp2 = parseFloat(tmp[i]);
-					if (tmp2 == undefined || isNaN(tmp2))
-					{
-						continue;
-					}
-					data.push([i, tmp2]);
-				}
-				$.plot("#" + self.placeholder, [data], self.option);
-			}
-			setTimeout(plot_update, self.timeout);
-		}
-		plot_update();
-	};
-	this.show = function ()
-	{
-		var html =
-			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
-			'<div align="' + this.align + '"><form>' +
-				'key<input type="text" name="key" value="' + this.key + '" />' +
-				'<input type="button" value="submit" />' +
-			'</form></div>';
-		document.getElementById(this.canvas).innerHTML = html;
-		document.getElementById(this.canvas).getElementsByTagName("input")[1].onclick = function ()
-		{
-			var key = this.form.key.value;
-			if (key != undefined && key != "")
-			{
-				self.php_comm.commPhp("call_method", "method=get_key&key=" + key);
-			}
-		}
-		this.update();
-	}
-}
-var historicPlot = function (conf)
-{
-	this.canvas = "historicPlot";
-	this.placeholder = "hp_placeholder";
-	this.width = "100%";
-	this.height = "300px";
-	this.align = "center";
-	this.key = "";
-	this.debug = "debug";
-	this.timeout = 300;
+	/**
+	 * max points of a curve in the plot
+	 * @public
+	 */
 	this.max_points = 200;
+	/**
+	 * create a php communication
+	 * @public
+	 */
 	this.php_comm = new phpComm();
+	/**
+	 * options for the plot
+	 * @public
+	 */
 	this.option = {
 		series: {
 			lines: {show: true},
@@ -623,39 +928,43 @@ var historicPlot = function (conf)
 			show: true,
 			hoverable: true,
 			autoHighlight: false
-		}};
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	this.last_ret = "";
+	}};
+	var last_ret = "", plot;
 	var self = this;
-	this.update = function()
+	/**
+	 * plot periodically
+	 * @private
+	 */
+	var update = function()
 	{
-		var plot = $.plot("#" + this.placeholder, [[]], this.option);
-		// update the plot periodically in order to plot the data from Redis
-		function plot_update()
+		var rec = self.php_comm.receive;
+		// if we have new data from Redis
+		if (rec != last_ret)
 		{
-			var rec = self.php_comm.getRec();
-			if (rec != self.last_ret)
+			last_ret = rec;
+			var data = new Array();
+			var tmp = rec.split(", ");
+			// if there is only one string of data
+			if (tmp.length <= 1 || (tmp.length == 2 && tmp[1].length <= 1))
 			{
-				// we have new data from Redis
-				this.last_ret = rec;
-				var tmp = rec.split(", ");
-				var data = new Array();
+				var tmp2 = tmp[0].split(" ");
+				for (var i in tmp2)
+				{
+					data.push([i, tmp2[i]]);
+				}
+				// @todo specify the threshold
+				$.plot("#" + self.placeholder, [{data: data, threshold: {below: 3, color: "rgb(0, 0, 0)"}}], self.option);
+			} else // multi strings of data
+			{
+				// obtain the amount of curves
 				var tmp2 = tmp[0].split(" ");
 				for (var j = 2; j < tmp2.length; ++ j)
 				{
-					data.push({label: LABEL[j - 1], data: new Array()})
+					data.push({label: LABEL[j - 1], data: new Array(), yaxis: j - 1})
 				}
 				for (var i in tmp)
 				{
-					if (i > self.max_points)
+					if (self.max_points > 0 && i > self.max_points)
 						break;
 					tmp2 = tmp[i].split(" ");
 					for (var j = 2; j < tmp2.length; ++ j)
@@ -670,15 +979,26 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				}
 				$.plot("#" + self.placeholder, data, self.option);
 			}
-			setTimeout(plot_update, self.timeout);
 		}
-		plot_update();
+		setTimeout(update, self.timeout);
 	};
+	/**
+	 * show this object, add callbacks, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>' +
-			'<div align="' + this.align + '"><form>' +
+			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
+			'<div align="' + self.align + '"><form>' +
+				'key<input type="text" name="key" value="' + self.key + '" />' +
+				'<input type="button" value="submit" />' +
+			'</form></div>' +
+			'<div align="' + self.align + '"><form>' +
+				'backup data: robot<input type="text" name="robot" value="cb18" />' +
+				'<input type="button" value="submit" />' +
+			'</form></div>' +
+			'<div align="' + self.align + '"><form>' +
 				'robot<input type="text" name="robot" value="cb18" />' +
 				'year<input type="text" name="year" value="2013" />' +
 				'month<input type="text" name="month" value="Mar" />' +
@@ -689,39 +1009,83 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				'duration (s)<input type="text" name="duration" value="3600" />' +
 				'<input type="button" value="submit" />' +
 			'</form></div>';
-		document.getElementById(this.canvas).innerHTML = html;
-		var input_array = document.getElementById(this.canvas).getElementsByTagName("input")
+		document.getElementById(self.canvas).innerHTML = html;
+		var input_array = document.getElementById(self.canvas).getElementsByTagName("input");
+		// add callback to getKey button
+		input_array[1].onclick = function ()
+		{
+			var key = this.form.key.value;
+			if (typeof key != "undefined" && key != "")
+			{
+				self.php_comm.cmd = "method=get_key&key=" + key;
+				self.php_comm.commPhp();
+			}
+		}
+		// add callback to getOldData button
+		input_array[3].onclick = function ()
+		{
+			var robot = this.form.robot.value;
+			if (typeof robot != "undefined" && robot != "")
+			{
+				self.php_comm.cmd = "method=getOldData&robot=" + robot;
+				self.php_comm.commPhp();
+			}
+		}
+		// add callback to historicData button
 		input_array[input_array.length - 1].onclick = function ()
 		{
-			var cmd = "&robot=" + this.form.robot.value + "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value + "&duration=" + this.form.duration.value;
-			self.php_comm.commPhp("call_method", "method=historicData" + cmd);
+			self.php_comm.cmd = "method=historicData&robot=" + this.form.robot.value + "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value + "&duration=" + this.form.duration.value;
+			self.php_comm.commPhp();
 		}
-		this.update();
+		plot = $.plot("#" + self.placeholder, [[]], self.option);
+		update();
 	}
 }
-var timeTravel = function (conf)
+/**
+ * @class put old data back to Redis for time traveling
+ */
+var timeTravel = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "timeTravel";
+	/**
+	 * @public
+	 */
 	this.align = "center";
-	this.key = "";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
+	/**
+	 * create a php communication
+	 * @public
+	 */
 	this.php_comm = new phpComm();
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
 	var self = this, cmd = "";
-	this.update = function()
+	/**
+	 * update data periodically
+	 * @private
+	 */
+	var update = function()
 	{
-		self.php_comm.commPhp("call_method", "method=timeTravel" + cmd);
-		setTimeout(self.update, self.timeout);
+		//@bug need to send value to tell PHP which
+		self.php_comm.cmd = "method=timeTravel" + cmd;
+		self.php_comm.commPhp();
+		setTimeout(update, self.timeout);
 	};
+	/**
+	 * show this object, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
@@ -734,27 +1098,62 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 				'second<input type="text" name="second" value="0" />' +
 				'<input type="button" value="submit" />' +
 			'</form></div>';
-		document.getElementById(this.canvas).innerHTML = html;
-		var input_array = document.getElementById(this.canvas).getElementsByTagName("input")
+		document.getElementById(self.canvas).innerHTML = html;
+		var input_array = document.getElementById(self.canvas).getElementsByTagName("input");
 		input_array[input_array.length - 1].onclick = function ()
 		{
 			cmd = "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value;
-			self.update();
+			update();
 		}
 	}
 }
-var trajPlot1 = function (conf)
+/**
+ * @class trajectory plot by Flot
+ */
+var trajPlot1 = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "trajPlot1";
+	/**
+	 * the place to hold this plot
+	 * @public
+	 */
 	this.placeholder = "tp_placeholder";
+	/**
+	 * @public
+	 */
 	this.width = "600px";
+	/**
+	 * @public
+	 */
 	this.height = "500px";
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
+	/**
+	 * max points of a curve in the plot
+	 * @public
+	 */
 	this.total_points = 30;
-	this.min = 0;
-	this.max = 100;
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
-	this.robot_data = new robotData();
+	/**
+	 * robot data generated by robotData
+	 * @public
+	 */
+	this.robot_data;
+	/**
+	 * options of the plot
+	 * @public
+	 */
 	this.option = {
 		series: {
 			shadowSize: 0,
@@ -768,132 +1167,170 @@ var trajPlot1 = function (conf)
 				hoverable: true,
 				autoHighlight: false
 	}};
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-	}
+	var data = new Array(), data2 = new Array(), plot;
 	var self = this;
-	this.update = function ()
+	/**
+	 * combine data into position value
+	 * @private
+	 */
+	var combineData = function (pos0, pos1)
 	{
-		var pos = [0, 0], data = [], data2 = [];
-		function getData()
+		// x axis
+		if (data.length > 0)
+			data = data.slice(1);
+		while (data.length < self.total_points)
 		{
-			if (data.length > 0)
-				data = data.slice(1);
-			while (data.length < self.total_points)
-			{
-				var y = pos[0];
-				if (y < self.min)
-					y = self.min;
-				if (y > self.max)
-					y = self.max;
-				data.push(y);
-			}
-			if (data2.length > 0)
-				data2 = data2.slice(1);
-			while (data2.length < self.total_points)
-			{
-				var y = pos[1];
-				if (y < self.min)
-					y = self.min;
-				if (y > self.max)
-					y = self.max;
-				data2.push(y);
-			}
-			// combine data and data2, and plot them in one plot, so the trajectory is obtained.
-			var res = [];
-			for (var i = 0; i < data.length; ++i)
-			{
-				res.push([data2[i], data[i]]);
-			}
-			return res;
+			var y = pos0;
+			if (y < self.option.xaxis.min)
+				y = self.option.xaxis.min;
+			if (y > self.option.xaxis.max)
+				y = self.option.xaxis.max;
+			data.push(y);
 		}
-		var plot = $.plot("#" + this.placeholder, [ getData() ], this.option);
-		// update plots periodically
-		function plot_update()
+		// y axis
+		if (data2.length > 0)
+			data2 = data2.slice(1);
+		while (data2.length < self.total_points)
 		{
-			pos[0] = self.robot_data.getData("cb01", "x");
-			pos[1] = self.robot_data.getData("cb01", "y");
-			plot.setData([ getData() ]);
-			plot.draw();
-			setTimeout(plot_update, self.timeout);
+			var y = pos1;
+			if (y < self.option.xaxis.min)
+				y = self.option.xaxis.min;
+			if (y > self.option.xaxis.max)
+				y = self.option.xaxis.max;
+			data2.push(y);
 		}
-		plot_update();
+		// combine data and data2, and plot them in one plot, so the trajectory is obtained.
+		var res = [];
+		for (var i = 0; i < data.length; ++i)
+		{
+			res.push([data2[i], data[i]]);
+		}
+		return res;
+	}
+	/**
+	 * plot periodically
+	 * @private
+	 */
+	var update = function ()
+	{
+		plot.setData([ combineData(self.robot_data.getData("cb01", "x"), self.robot_data.getData("cb01", "y")) ]);
+		plot.draw();
+		setTimeout(update, self.timeout);
 	};
+	/**
+	 * show this object, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div>';
-		document.getElementById(this.canvas).innerHTML = html;
-		this.update();
+			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>';
+		document.getElementById(self.canvas).innerHTML = html;
+		// if robot data is not defined, define one
+		if (typeof self.robot_data == "undefined")
+		{
+			self.robot_data = new robotData();
+			self.robot_data.update();
+		}
+		plot = $.plot("#" + self.placeholder, [[]], self.option);
+		update();
 	}
 }
-var trajPlot2 = function (conf)
+/**
+ * @class trajectory plot by jsDraw2DX
+ */
+var trajPlot2 = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "trajPlot2";
+	/**
+	 * the place to hold this plot
+	 * @public
+	 */
 	this.placeholder = "graphics";
+	/**
+	 * @public
+	 */
 	this.overflow = "hidden";
+	/**
+	 * @public
+	 */
 	this.position = "relative";
+	/**
+	 * @public
+	 */
 	this.width = "600px";
+	/**
+	 * @public
+	 */
 	this.height = "600px";
+	/**
+	 * max points of a curve in the plot
+	 * @public
+	 */
 	this.total_points = 30;
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	this.min = 0;
+	/**
+	 * size of the playground
+	 * @public
+	 */
 	this.max = 100;
-	this.php_comm = new phpComm();
-	this.robot_data = new robotData();
+	/**
+	 * robot data
+	 * @public
+	 */
+	this.robot_data;
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
-	for (var key in conf)
+	var data = new Array(), data2 = new Array(), gr, body, test1, line = new Array();
+	var self = this;
+	/**
+	 * combine data into position data
+	 * @public
+	 */
+	var getData = function (pos0, pos1)
 	{
-		if (typeof(this[key]) === "undefined")
+		if (data.length > 0)
+			data = data.slice(1);
+		while (data.length < self.total_points)
 		{
-			continue;
+			var y = pos0;
+			if (y < 0)
+				y = 0;
+			if (y > self.max)
+				y = self.max;
+			data.push(y);
 		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
+		if (data2.length > 0)
+			data2 = data2.slice(1);
+		while (data2.length < self.total_points)
+		{
+			var y = pos1;
+			if (y < 0)
+				y = 0;
+			if (y > self.max)
+				y = self.max;
+			data2.push(y);
+		}
 	}
-	this.update = function ()
+	/**
+	 * plot static stuff
+	 * @private
+	 */
+	var plotStatic = function ()
 	{
-		var pos = [0, 0], data = [], data2 = [];
-		var self = this;
-		function getData()
-		{
-			if (data.length > 0)
-				data = data.slice(1);
-			while (data.length < self.total_points)
-			{
-				var y = pos[0];
-				if (y < self.min)
-					y = self.min;
-				if (y > self.max)
-					y = self.max;
-				data.push(y);
-			}
-			if (data2.length > 0)
-				data2 = data2.slice(1);
-			while (data2.length < self.total_points)
-			{
-				var y = pos[1];
-				if (y < self.min)
-					y = self.min;
-				if (y > self.max)
-					y = self.max;
-				data2.push(y);
-			}
-			// combine data and data2, and plot them in one plot, so the trajectory is obtained.
-			var res = [];
-			for (var i = 0; i < data.length; ++i)
-			{
-				res.push([data2[i], data[i]]);
-			}
-			return res;
-		}
 		// draw the static graphics by jsDraw2DX
-		var gr = new jxGraphics(document.getElementById(this.placeholder));
+		gr = new jxGraphics(document.getElementById(self.placeholder));
 		var boundary = new jxRect(new jxPoint(0,0), 600, 600, new jxPen(new jxColor("grey"),'1px'));
 		boundary.draw(gr);
 		var grid = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
@@ -904,167 +1341,217 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 		patch1.draw(gr);
 		var patch1 = new jxCircle(new jxPoint(30, 570), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
+
 		// draw the initial graphics of dynamic objects
-		getData();
+		getData(0, 0);
 		var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
-		var body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
+		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 		body.draw(gr);
-		var test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
+		test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
 		test1.draw(gr);
-		var line = [];
 		for (var i = 0; i < data.length - 1; ++i)
 		{
 			line.push( new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px')) );
 			line[i].draw(gr);
 		}
-		function plot_update()
+	}
+	/**
+	 * plot periodically
+	 * @public
+	 */
+	var update = function ()
+	{
+		getData(self.robot_data.getData("cb01", "x"), self.robot_data.getData("cb01", "y"));
+		var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
+		body.remove();
+		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
+		body.draw(gr);
+		test1.remove();
+		test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
+		test1.draw(gr);
+		for (var i = 0; i < data.length - 1; ++i)
 		{
-			pos[0] = self.robot_data.getData("cb01", "x");
-			pos[1] = self.robot_data.getData("cb01", "y");
-			getData();
-			pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
-			body.remove();
-			body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
-			body.draw(gr);
-			test1.remove();
-			test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
-			test1.draw(gr);
-			for (var i = 0; i < data.length - 1; ++i)
-			{
-				line[i].remove();
-				line[i] = new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px'));
-				line[i].draw(gr);
-			}
-			setTimeout(plot_update, self.timeout);
+			line[i].remove();
+			line[i] = new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px'));
+			line[i].draw(gr);
 		}
-		plot_update();
+		setTimeout(update, self.timeout);
 	};
+	/**
+	 * show this object, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + this.placeholder + '" style="overflow:' + this.overflow + ';position:' + this.position + ';width:' + this.width + ';height:' + this.height + ';"></div>';
-		document.getElementById(this.canvas).innerHTML = html;
-		this.update();
+			'<div id="' + self.placeholder + '" style="overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + ';height:' + self.height + ';"></div>';
+		document.getElementById(self.canvas).innerHTML = html;
+		// if robot data is not defined, define one
+		if (typeof self.robot_data == "undefined")
+		{
+			self.robot_data = new robotData();
+			self.robot_data.update();
+		}
+		plotStatic();
+		update();
 	}
 }
-var dynamicPlot = function (conf)
+/**
+ * @class dynamic plot
+ */
+var dynamicPlot = function ()
 {
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
 	this.canvas = "dynamicPlot";
+	/**
+	 * @public
+	 */
 	this.border = 0;
+	/**
+	 * width of the entire table
+	 * @public
+	 */
 	this.table_width = "100%";
+	/**
+	 * height of the entire table
+	 * @public
+	 */
 	this.table_height = "100%";
+	/**
+	 * the place to hold this plot
+	 * @public
+	 */
 	this.placeholder = "dp_placeholder";
+	/**
+	 * width of the plot
+	 * @public
+	 */
 	this.width = "100%";
-	this.height = "300px";
+	/**
+	 * height of the plot
+	 * @public
+	 */
+	this.height = "240px";
+	/**
+	 * height of the text
+	 * @public
+	 */
 	this.text_width = "130px";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * max points of a curve in the plot
+	 * @public
+	 */
 	this.total_points = 100;
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	this.robot_data = new robotData();
+	/**
+	 * robot data
+	 * @public
+	 */
+	this.robot_data;
+	/**
+	 * options for the plot
+	 * @public
+	 */
 	this.option = {
 		// drawing is faster without shadows
 		series: {shadowSize: 0, lines: {show: true} },
 		yaxis: { min: 0, max: 100 },
 		xaxis: { min: -this.total_points + 1, max: 0},
-		grid: {show: true},
+		grid: {show: true}
 	};
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	var label = ["frame", "x", "y", "voltage", "current"];
+	var dataset = new Object(), plot;
 	var self = this;
-	this.update = function ()
+	var getData = function ()
 	{
+		// obtain robot data
 		var data_ret = new Array();
-		for (var i = 0; i < label.length; ++ i)
+		for (var i = 0; i < LABEL.length; ++ i)
 		{
-			data_ret[i] = 0;
+			data_ret[i] = self.robot_data.getData("cb18", LABEL[i]);
 		}
-		var dataset = new Object();
-		// generate the list of datasets by robot names and labels
-		for (var j = 0; j < label.length; ++ j)
+		var cnt = -1;
+		for (i in dataset)
 		{
-			dataset[label[j]] = {label: label[j], data: []};
-		}
-		function getData()
-		{
-			for (var i = 0; i < label.length; ++ i)
+			++ cnt;
+			var tmp = new Array();
+			for (j in dataset[i].data)
 			{
-				data_ret[i] = self.robot_data.getData("cb18", label[i]);
-			}
-			var cnt = -1;
-			for (i in dataset)
-			{
-				++ cnt;
-				var tmp = new Array();
-				for (j in dataset[i].data)
+				if (typeof dataset[i].data[j][1] != "undefined" && ! isNaN(dataset[i].data[j][1]))
 				{
 					tmp.push(dataset[i].data[j][1]);
 				}
-				if (tmp.length > 0)
-				{
-					tmp = tmp.slice(1);
-				}
-				var y = 0;
-				while (tmp.length < self.total_points)
-				{
-					y = data_ret[cnt];
-					tmp.push(y);
-				}
-				// add the number to the corresponding label
-				var lis = document.getElementById(self.canvas).getElementsByTagName("li");
-				for (var j = 0; j < lis.length; ++ j)
-				{
-					if (lis[j].innerText.length >= dataset[i].label.length && lis[j].innerText.substr(0, dataset[i].label.length) == dataset[i].label)
-					{
-						lis[j].innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
-					}
-				}
-				// zip the generated y values with the x values
-				var res = [];
-				for (var j = 0; j < tmp.length; ++ j)
-				{
-					res.push([j + 1 - tmp.length, tmp[j]]);
-				}
-				dataset[i].data = res;
 			}
+			if (tmp.length > 0)
+			{
+				tmp = tmp.slice(1);
+			}
+			var y = 0;
+			while (tmp.length < self.total_points)
+			{
+				y = data_ret[cnt];
+				tmp.push(y);
+			}
+			// add the number to the corresponding label
+			var lis = document.getElementById(self.canvas).getElementsByTagName("li");
+			for (var j = 0; j < lis.length; ++ j)
+			{
+				if (lis[j].innerText.length >= dataset[i].label.length && lis[j].innerText.substr(0, dataset[i].label.length) == dataset[i].label)
+				{
+					lis[j].innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
+				}
+			}
+			// zip the generated y values with the x values
+			var res = new Array();
+			for (var j = 0; j < tmp.length; ++ j)
+			{
+				res.push([j + 1 - tmp.length, tmp[j]]);
+			}
+			dataset[i].data = res;
 		}
+	}
+	/**
+	 * plot periodically
+	 * @private
+	 */
+	var update = function ()
+	{
 		getData();
 		var data = new Array();
-		for (var j = 1; j < label.length; ++ j)
+		for (var i = 1; i < LABEL.length; ++ i)
 		{
-			data.push({label: dataset[label[j]].label, data: dataset[label[j]].data});
+			data.push( dataset[LABEL[i]].data );
 		}
-		var plot = $.plot("#" + this.placeholder, data, this.option);
-		function plot_update()
-		{
-			getData();
-			var data = new Array();
-			for (var j = 1; j < label.length; ++ j)
-			{
-				data.push( dataset[label[j]].data );
-			}
-			plot.setData( data );
-			plot.draw();
-			setTimeout(plot_update, self.timeout);
-		}
-		plot_update();
+		plot.setData( data );
+		plot.draw();
+		setTimeout(update, self.timeout);
 	};
+	/**
+	 * show this object, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + this.border + '" style="width:' + this.table_width + ';height:' + this.table_height + ';">' +
+			'<table border="' + self.border + '" style="width:' + self.table_width + ';height:' + self.table_height + ';">' +
 				'<tr>' +
-					'<td><div id="' + this.placeholder + '" style="width:' + this.width + ';height:' + this.height + ';"></div></td>' +
-					'<td width="' + this.text_width + '" align="center">' +
+					'<td><div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div></td>' +
+					'<td width="' + self.text_width + '" align="center">' +
+						//@todo add a href to a single robot page
 						'<a href="">robot</a>' +
 						'<ul style="list-style-type:none;">' +
+							//@todo add corresponding labels
 							'<li>x:</li>' +
 							'<li>y:</li>' +
 							'<li>voltage:</li>' +
@@ -1073,296 +1560,458 @@ document.getElementById(this.debug).innerHTML = "debug: " + key;
 					'</td>' +
 				'</tr>' +
 			'</table>';
-		document.getElementById(this.canvas).innerHTML = html;
-		this.update();
-	}
-}
-var safeRange = function (conf)
-{
-	this.canvas = "safeRange";
-	this.border = 1;
-	this.width = "80%";
-	this.align = "center";
-	this.sr_text = "safe-range";
-	this.min = 0;
-	this.max = 100;
-	this.checked = false;
-	this.safe_text = "safe";
-	this.alert_text = "DANGER !";
-	this.debug = "debug";
-	this.timeout = 300;
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
+		document.getElementById(self.canvas).innerHTML = html;
+		// if robot data is not defined, define one
+		if (typeof self.robot_data == "undefined")
 		{
-			continue;
+			self.robot_data = new robotData();
+			self.robot_data.update();
 		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	var self = this;
-	this.test_saferange = function (value)
-	{
-		if (this.checked && (value < this.min || value > this.max))
+		// generate the list of datasets by robot names and labels
+		for (var i = 0; i < LABEL.length; ++ i)
 		{
-			document.getElementById(this.canvas).getElementsByTagName("p")[0].innerHTML = this.alert_text;
-			alert(this.alert_text);
-		} else
-		{
-			document.getElementById(this.canvas).getElementsByTagName("p")[0].innerHTML = this.safe_text;
+			dataset[LABEL[i]] = {label: LABEL[i], data: []};
 		}
-	}
-	this.show = function ()
-	{
-		var html =
-			'<table border="' + this.border + '" align="' + this.align + '" width="' + this.width + '">' +
-				'<tr align="' + this.align + '">' +
-					'<td><input type="checkbox" name="saferange">' + this.sr_text + '</td>' +
-					'<td>' +
-						'<form name="safe_range">' +
-						'min<input type="text" name="min" value="' + this.min + '">' +
-						'max<input type="text" name="max" value="' + this.max + '">' +
-						'<input type="button" value="submit">' +
-						'</form>' +
-					'</td>' +
-					'<td width="20%">' +
-						'<p id="safe">' + this.safe_text + '</p>' +
-					'</td>' +
-				'</tr>' +
-			'</table>';
-		document.getElementById(this.canvas).innerHTML = html;
-		document.getElementById(this.canvas).getElementsByTagName("input")[0].onchange = function ()
+		getData();
+		var data = new Array();
+		for (var i = 1; i < LABEL.length; ++ i)
 		{
-			self.checked = this.checked;
-document.getElementById(self.debug).innerHTML = "debug: " + self.checked;
+			data.push({label: dataset[LABEL[i]].label, data: dataset[LABEL[i]].data});
 		}
-		document.getElementById(this.canvas).getElementsByTagName("input")[3].onclick = function ()
-		{
-			self.min = this.form.min.value;
-			self.max = this.form.max.value;
-document.getElementById(self.debug).innerHTML = "debug: " + self.min + " " + self.max;
-		}
-		var update = function ()
-		{
-			var data = Math.round(Math.random() * 100);
-document.getElementById(self.debug).innerHTML = "debug: " + data;
-			self.test_saferange(data);
-			setTimeout(update, self.timeout);
-		};
+		plot = $.plot("#" + self.placeholder, data, self.option);
 		update();
 	}
 }
-var trajGmap = function (conf)
+/**
+ * @class control for safe range
+ */
+var safeRange = function ()
 {
-	this.canvas = "trajGmap";
-	this.debug = "debug";
-	this.map_canvas = "map_canvas";
-	this.border = 0;
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
+	this.canvas = "safeRange";
+	/**
+	 * @public
+	 */
+	this.border = 1;
+	/**
+	 * @public
+	 */
+	this.width = "100%";
+	/**
+	 * @public
+	 */
 	this.align = "center";
-	this.width = "40%";
+	/**
+	 * @public
+	 */
+	this.sr_text = "safe-range";
+	/**
+	 * min alarm value
+	 * @public
+	 */
+	this.min = 0;
+	/**
+	 * max alarm value
+	 * @public
+	 */
+	this.max = 100;
+	/**
+	 * say when safe
+	 * @public
+	 */
+	this.safe_text = "safe";
+	/**
+	 * say when alarm
+	 * @public
+	 */
+	this.alarm_text = "DANGER !";
+	/**
+	 * robot data
+	 * @public
+	 */
+	this.robot_data;
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
 	this.debug = "debug";
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
 	this.timeout = 300;
-	this.mv_php_comm = new phpComm();
-	this.robot_data;// = new robotData();
+	var checked = false, robot, label;
+	var self = this;
+	/**
+	 * test if it in the safe-range
+	 * @private
+	 */
+	var test_saferange = function (value)
+	{
+		if (checked && (value < self.min || value > self.max))
+		{
+			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.alarm_text;
+			//alert(self.alarm_text);
+		} else
+		{
+			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.safe_text;
+		}
+	}
+	/**
+	 * update the test periodically
+	 * @private
+	 */
+	var update = function ()
+	{
+		//var data = Math.round(Math.random() * 100);
+		var data = self.robot_data.getData(robot, label);
+		document.getElementById(self.canvas).getElementsByTagName("p")[0].innerHTML = data;
+		test_saferange(data);
+		setTimeout(update, self.timeout);
+	};
+	/**
+	 * show this object, assign callback, and start to plot periodically
+	 * @public
+	 */
+	this.show = function ()
+	{
+		var html =
+			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '">' +
+				'<tr align="' + self.align + '">' +
+					'<td>' +
+						'<form name="safe_range">' +
+						'safe-range<input type="checkbox" name="work">' +
+						'min<input type="text" name="min" value="' + self.min + '">' +
+						'max<input type="text" name="max" value="' + self.max + '">' +
+						'<input type="button" value="submit">' +
+						'</form>' +
+					'</td>' +
+					'<td>' +
+						'<form name="source">' +
+						'robot<input type="text" name="robot" value="">' +
+						'label<input type="text" name="label" value="">' +
+						'<input type="button" value="submit">' +
+						'</form>' +
+					'</td>' +
+					'<td width="10%"><p></p></td>' +
+					'<td width="10%">' +
+						'<p>' + self.safe_text + '</p>' +
+					'</td>' +
+				'</tr>' +
+			'</table>';
+		document.getElementById(self.canvas).innerHTML = html;
+		// callback of checkbox
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onchange = function ()
+		{
+			checked = this.checked;
+//document.getElementById(self.debug).innerHTML = "debug: " + self.checked;
+		}
+		// callback of submit button of safe_range form
+		document.getElementById(self.canvas).getElementsByTagName("input")[3].onclick = function ()
+		{
+			self.min = parseFloat(this.form.min.value);
+			self.max = parseFloat(this.form.max.value);
+//document.getElementById(self.debug).innerHTML = "debug: " + this.form.work.value + " " + self.min + " " + self.max;
+		}
+		// callback of submit button of source form
+		document.getElementById(self.canvas).getElementsByTagName("input")[6].onclick = function ()
+		{
+			robot = this.form.robot.value;
+			label = this.form.label.value;
+//document.getElementById(self.debug).innerHTML = "debug: " + robot + " " + label;
+		}
+		// if robot data is not defined, define one
+		if (typeof self.robot_data == "undefined")
+		{
+			self.robot_data = new robotData();
+			self.robot_data.update();
+		}
+		update();
+	}
+}
+/**
+ * @class trajectory plot on Google map
+ */
+var trajGmap = function ()
+{
+	/**
+	 * the place to hold this object
+	 * @public
+	 */
+	this.canvas = "trajGmap";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
+	this.debug = "debug";
+	/**
+	 * the place to hold this plot
+	 * @public
+	 */
+	this.map_canvas = "map_canvas";
+	/**
+	 * @public
+	 */
+	this.border = 0;
+	/**
+	 * @public
+	 */
+	this.align = "center";
+	/**
+	 * @public
+	 */
+	this.width = "40%";
+	/**
+	 * the placeholder of debug info
+	 * @public
+	 */
+	this.debug = "debug";
+	/**
+	 * the timeout between two updates (ms)
+	 * @public
+	 */
+	this.timeout = 300;
+	/**
+	 * robot data
+	 * @public
+	 */
+	this.robot_data;
+	/**
+	 * create a php communication to get grid information
+	 * @public
+	 */
 	this.grid_php_comm = new phpComm();
+	/**
+	 * options for map
+	 * @public
+	 */
 	this.map_options =
 	{
 		zoom: 17,
 		center: new google.maps.LatLng(LAB[0], LAB[1]),
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
-	this.view_type = "basic";
-	this.follow = "";
-	for (var key in conf)
-	{
-		if (typeof(this[key]) === "undefined")
-		{
-			continue;
-		}
-		this[key] = conf[key];
-document.getElementById(this.debug).innerHTML = "debug: " + key;
-	}
-	this.map;
+	var view_type = "basic", follow = "", map;
+	var last_coord = new Object(), coord = new Object(), rpath = new Object(), robot = new Object(), grid = new Object(), grid_value = new Object();
 	var self = this;
-	this.setMap = function (map)
+	/**
+	 * set map externally
+	 * @public
+	 */
+	this.setMap = function (m)
 	{
-		this.map = map;
+		map = m;
 	}
-	//[bug] no longer useful
+	/**
+	 * init map
+	 * @public
+	 * @bug no longer useful
+	 */
 	this.init = function ()
 	{
-		var map = new google.maps.Map(document.getElementById('map_canvas'),
-			this.map_options);
+		map = new google.maps.Map(document.getElementById('map_canvas'),
+			self.map_options);
 		var marker = new google.maps.Marker({
 			position: new google.maps.LatLng(LAB[0], LAB[1]),
 			map: map,
 			title: 'Autonomy Lab at Simon Fraser University'
 		});
 	}
-	this.last_coord = new Array();
-	this.coord = new Array();
-	this.rpath = new Array();
-	this.robot = new Array();
-	this.grid = new Object();
-	this.grid_value = new Object();
-	// clear grid data from the map
-	this.clear_grid = function ()
+	/**
+	 * clear grid data from the map
+	 * @private
+	 */
+	var clearGrid = function ()
 	{
-		for (key in self.grid)
+		for (key in grid)
 		{
-			self.grid[key].setMap(null);
+			grid[key].setMap(null);
 		}
-document.getElementById("debug").innerHTML = "debug: " + self.view_type + " " + self.grid.length;
 	}
-	// transform the coordinate into grid position
-	this.coord_to_grid = function (x, y)
+	/**
+	 * transform the coordinate into grid position
+	 * @private
+	 */
+	var coordToGrid = function (x, y)
 	{
 		var GRID_SIZE = .001;
 		return [Math.round((x - LAB[0] - GRID_SIZE/2) / GRID_SIZE), Math.round((y - LAB[1] - GRID_SIZE/2) / GRID_SIZE)];
 	}
-	// pop up a info window on a grid
-	this.info_wnd = function (event)
+	/**
+	 * pop up a info window on a grid
+	 * @private
+	 */
+	var infoWnd = function (event)
 	{
-		var grid_pos = self.coord_to_grid(event.latLng.lat(), event.latLng.lng());
-		if (! ((grid_pos[0] + " " + grid_pos[1]) in self.grid_value))
+		var grid_pos = coordToGrid(event.latLng.lat(), event.latLng.lng());
+		if (! ((grid_pos[0] + " " + grid_pos[1]) in grid_value))
 		{
 			return;
 		}
 		var info = '<table border="1"><tr><td>grid</td><td>('+grid_pos[0] + ", " + grid_pos[1]+')</td></tr>'
 			+ '<tr><td>location</td><td>('+event.latLng.lat()+', '+event.latLng.lng()+')</td></tr>'
-			+ '<tr><td>value</td><td>'+ self.grid_value[grid_pos[0] + " " + grid_pos[1]] +'</td></tr>'
-			+ '<tr><td>color</td><td>'+ self.grid[grid_pos[0] + " " + grid_pos[1]].fillColor +'</td></tr></table>';
+			+ '<tr><td>value</td><td>'+ grid_value[grid_pos[0] + " " + grid_pos[1]] +'</td></tr>'
+			+ '<tr><td>color</td><td>'+ grid[grid_pos[0] + " " + grid_pos[1]].fillColor +'</td></tr></table>';
 		var infownd = new google.maps.InfoWindow({
 			content: info,
 			position: event.latLng
 		});
-		infownd.open(self.map);
+		infownd.open(map);
 	}
-	// generate the trajectory
-	this.robot_move = function ()
+	/**
+	 * get the icon representing substate
+	 * @private
+	 */
+	var getIcon = function ()
 	{
-		self.mv_php_comm.commPhp("call_method", "method=get_robot_data");
-		// separate the data into different robots
-		var ret = self.mv_php_comm.receive.split(", ");
-		for (var i = 0; i < ret.length; ++ i)
+		var icon = new Array();
+		switch (Math.round(Math.random() * 6))
 		{
-			// separate the data into different values
-			var j = ret[i].split(" ");
-			// the 1st is x, and the 2nd is y
-			var x = parseFloat(j[1]), y = parseFloat(j[2]);
-			if (x == undefined || isNaN(x) || y == undefined || isNaN(y))
+		case 0:
+			icon = [];
+			break;
+		case 1: // arrows
+			icon = [{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}];
+			break;
+		case 2: // dashed lines
+			icon = [{
+				icon: {
+					path: 'M 0,-1 0,1',
+					strokeOpacity: 1,
+					scale: 4
+				},
+				offset: '0',
+				repeat: '20px'
+			}];
+			break;
+		case 3:
+			icon = [{
+				icon: {
+					path: 'M -2,0 0,-2 2,0 0,2 z',
+					strokeColor: '#F00',
+					fillColor: '#F00',
+					fillOpacity: 1
+				},
+				offset: '50%'
+			}];
+			break;
+		case 4:
+			icon = [{
+				icon: {
+					path: 'M -2,-2 2,2 M 2,-2 -2,2',
+					strokeColor: '#292',
+					strokeWeight: 4
+				},
+				offset: '50%'
+			}];
+			break;
+		case 5:
+			icon = [{
+				icon: {
+					path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3',
+					strokeColor: '#00F',
+					 rotation: 0
+				},
+				offset: '50%'
+			}];
+			break;
+		default:
+		}
+		return icon;
+	}
+	/**
+	 * generate the trajectory
+	 * @private
+	 */
+	var robotMove = function ()
+	{
+		// separate the data into different robots
+		var all = self.robot_data.getAllRobots();
+		for (var i in all)
+		{
+			var x = parseFloat(all[i]["x"]), y = parseFloat(all[i]["y"]);
+			if (typeof x == "undefined" || isNaN(x) || typeof y == "undefined" || isNaN(y))
 				continue;
-			self.last_coord[i] = self.coord[i];
-			self.coord[i] = [j[1], j[2]];
-			if (self.coord[i][0] != self.last_coord[i][0] || self.coord[i][1] != self.last_coord[i][1])
+			// if a new robot, assign default value to it
+			if (! (i in robot))
+			{
+				last_coord[i] = [x, y];
+				coord[i] = [x, y];
+				rpath[i] = new Array();
+				robot[i] = null;
+				document.getElementById(self.canvas).getElementsByTagName("select")[1].innerHTML += '<option value="' + i + '">' + i + '</option>';
+			}
+			last_coord[i] = coord[i];
+			coord[i] = [x, y];
+			// if the robot moves
+			if (coord[i][0] != last_coord[i][0] || coord[i][1] != last_coord[i][1])
 			{
 				// keep the length of path no longer than a threshold
-				while (self.rpath[i].length >= 20)
+				while (rpath[i].length >= 20)
 				{
-					self.rpath[i][0].setMap(null);
-					self.rpath[i].splice(0, 1);
+					rpath[i][0].setMap(null);
+					rpath[i].splice(0, 1);
 				}
-				var color, weight, icon = [];
+				var color, weight, icon;
 				// select if it is colorful
-				if (self.view_type == "colorful")
+				if (view_type == "colorful")
 				{
 					color = "#" + Math.floor(Math.random()*16777215).toString(16);
 					weight = 4;
-					switch (Math.round(Math.random() * 6))
-					{
-					case 0:
-						icon = [];
-						break;
-					case 1: // arrows
-						icon = [{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}];
-						break;
-					case 2: // dashed lines
-						icon = [{
-							icon: {
-								path: 'M 0,-1 0,1',
-								strokeOpacity: 1,
-								scale: 4
-							},
-							offset: '0',
-							repeat: '20px'
-						}];
-						break;
-					case 3:
-						icon = [{
-							icon: {
-								path: 'M -2,0 0,-2 2,0 0,2 z',
-								strokeColor: '#F00',
-								fillColor: '#F00',
-								fillOpacity: 1
-							},
-							offset: '50%'
-						}];
-						break;
-					case 4:
-						icon = [{
-							icon: {
-								path: 'M -2,-2 2,2 M 2,-2 -2,2',
-								strokeColor: '#292',
-								strokeWeight: 4
-							},
-							offset: '50%'
-						}];
-						break;
-					case 5:
-						icon = [{
-							icon: {
-								path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3',
-								strokeColor: '#00F',
-								 rotation: 0
-							},
-							offset: '50%'
-						}];
-						break;
-					default:
-					}
+					icon = getIcon();
+
 				} else
 				{
 					color = "black";
 					weight = 1;
+					icon = new Array();
 				}
-				if (typeof self.robot[i] != "undefined")
+				// erase old robot position
+				if (typeof robot[i] != "undefined" && robot[i] != null)
 				{
-					self.robot[i].setMap(null);
+					robot[i].setMap(null);
 				}
-				self.robot[i] = new google.maps.Marker({
-					position: new google.maps.LatLng(self.coord[i][0], self.coord[i][1]),
-					map: self.map,
-					title:"robot" + i,
+				robot[i] = new google.maps.Marker({
+					position: new google.maps.LatLng(coord[i][0], coord[i][1]),
+					map: map,
+					title: i,
 					icon: "cabs.png"
 				});
-				self.rpath[i].push(new google.maps.Polyline({
-					map: self.map,
-					path: [new google.maps.LatLng(self.last_coord[i][0], self.last_coord[i][1]), new google.maps.LatLng(self.coord[i][0], self.coord[i][1])],
+				rpath[i].push(new google.maps.Polyline({
+					map: map,
+					path: [new google.maps.LatLng(last_coord[i][0], last_coord[i][1]), new google.maps.LatLng(coord[i][0], coord[i][1])],
 					strokeColor: color,
 					strokeOpacity: 1,
 					strokeWeight: weight,
 					icons: icon
 				}));
 			}
-			if (self.follow == ""+i)
+			if (follow == i)
 			{
 				// let the map follow a robot
-				self.map.panTo(self.robot[i].getPosition());
+				map.panTo(robot[i].getPosition());
 			}
 		}
-		window.setTimeout(self.robot_move, self.timeout);
+		window.setTimeout(robotMove, self.timeout);
 	}
-	// generate grids on energy or time distribution
-	this.cal_grid = function ()
+	/**
+	 * generate grids on energy or time distribution
+	 * @private
+	 * @todo
+	 */
+	var calGrid = function ()
 	{
-		if (self.view_type == "energy" || self.view_type == "time")
+		if (view_type == "energy" || view_type == "time")
 		{
 			//[bug] simply clear all grids in every iteration. Perhaps there is a better way
-			self.clear_grid();
-			var grid_size = .001 * Math.pow(17, 10) / Math.pow(self.map.getZoom(), 10);
-			var center_pos = self.coord_to_grid(self.map.getCenter().lat(), self.map.getCenter().lng());
-			var file = "call_method", cmd = "method=cal_grid&grid_size=" + grid_size + "&type=" + self.view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
-			self.grid_php_comm.commPhp(file, cmd);
+			clearGrid();
+			var grid_size = .001 * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
+			var center_pos = coordToGrid(map.getCenter().lat(), map.getCenter().lng());
+			self.grid_php_comm.cmd = "method=cal_grid&grid_size=" + grid_size + "&type=" + view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
+			self.grid_php_comm.commPhp();
 			// separate the data into different robots
 			var ret = self.grid_php_comm.receive.split(" ");
 			var dist, min;
@@ -1380,67 +2029,65 @@ document.getElementById("debug").innerHTML = "debug: " + self.view_type + " " + 
 				{
 					color = color.substr(0, 2);
 				}
-				if (self.view_type == "energy")
+				if (view_type == "energy")
 				{
 					color = "#FF" + color + color;
 				}
-				else if (self.view_type == "time")
+				else if (view_type == "time")
 				{
 					color = "#" + color + color + "FF";
 				}
-				self.grid[x + " " + y] = new google.maps.Rectangle({
+				grid[x + " " + y] = new google.maps.Rectangle({
 					strokeColor: 'grey',
 					strokeOpacity: 0.2,
 					strokeWeight: 1,
 					fillColor: color,
 					fillOpacity: 0.8,
-					map: self.map,
+					map: map,
 					title: "value: " + ret[i+3],
 					bounds: new google.maps.LatLngBounds(
 						new google.maps.LatLng(LAB[0] + x * grid_size, LAB[1] + y * grid_size),
 						new google.maps.LatLng(LAB[0] + x * grid_size + grid_size, LAB[1] + y * grid_size + grid_size))
 				});
-				google.maps.event.clearListeners(self.grid[x + " " + y], 'click');
+				google.maps.event.clearListeners(grid[x + " " + y], "click");
 				// add the info window into the grid
-				google.maps.event.addListener(self.grid[x + " " + y], 'click', function(event)
-				{
-					self.info_wnd(event);
-				});
+				google.maps.event.addListener(grid[x + " " + y], "click", infoWnd);
 				// save the grid value in order to be displayed on the info window
-				self.grid_value[x + " " + y] = ret[i+3];
+				grid_value[x + " " + y] = ret[i+3];
 			}
 		}
-		window.setTimeout(self.cal_grid, self.timeout);
+		window.setTimeout(calGrid, self.timeout);
 	}
-	this.update = function ()
+	/**
+	 * waiting for the setup of the map
+	 * @private
+	 */
+	var update = function ()
 	{
-		if (typeof self.map != "undefined" && self.map != null)
+		// wait until the map is setuped, and start update plots
+		if (typeof map != "undefined" && map != null)
 		{
-			for (var i = 0; i < ROBOT_NAME.length; ++ i)
-			{
-				self.coord.push([LAB[0], LAB[1]]);
-				self.rpath.push(new Array());
-			}
-			self.robot_move();
-			self.cal_grid();
-			google.maps.event.addListener(self.map, 'zoom_changed', function()
-			{
-				self.clear_grid();
-			});
+			robotMove();
+			calGrid();
+			google.maps.event.addListener(map, 'zoom_changed', clearGrid);
 		}
 		else
 		{
-			setTimeout(self.update, self.timeout);
+			setTimeout(update, self.timeout);
 		}
 	}
+	/**
+	 * show this object, add callbacks, and start to plot periodically
+	 * @public
+	 */
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + this.border + '" align="' + this.align + '" width="' + this.width + '" >' +
+			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '" >' +
 				'<tr>' +
 					'<td>' +
-						'<form align="' + this.align + '">' +
-							'<select name="view">' +
+						'<form align="' + self.align + '">' +
+							'view<select name="view">' +
 								'<option value="basic" selected="selected">basic</option>' +
 								'<option value="energy">energy map</option>' +
 								'<option value="time">time map</option>' +
@@ -1448,34 +2095,44 @@ document.getElementById("debug").innerHTML = "debug: " + self.view_type + " " + 
 							'</select>' +
 						'</form>' +
 					'</td>' +
-					'<td>follow:' +
-						'<form align="' + this.align + '">' +
-							'<select name="follow">' +
+					'<td>' +
+						'<form align="' + self.align + '">' +
+							'follow <select name="follow">' +
 								'<option value="none" selected="selected">none</option>' +
-								'<option value="0">0</option>' +
-								'<option value="1">1</option>' +
-								'<option value="2">2</option>' +
+								'<option value="lab">lab</option>' +
 							'</select>' +
 						'</form>' +
 					'</td>' +
 				'</tr>' +
 			'</table>';
-		document.getElementById(this.canvas).innerHTML = html;
-		var self = this;
+		document.getElementById(self.canvas).innerHTML = html;
 		var select = document.getElementsByTagName("select");
+		// add callback to view select
 		select[0].onclick = function ()
 		{
-			if (this.form.view.value == self.view_type)
+			if (this.form.view.value == view_type)
 				return;
-			self.clear_grid();
-			self.view_type = this.form.view.value;
+			clearGrid();
+			view_type = this.form.view.value;
 		}
+		// add callback to follow select
 		select[1].onclick = function ()
 		{
-			if (this.form.follow.value == self.follow)
+			if (this.form.follow.value == follow)
 				return;
-			self.follow = this.form.follow.value;
+			follow = this.form.follow.value;
+			// pan to the location of lab
+			if ("lab" == follow)
+			{
+				map.panTo(new google.maps.LatLng(LAB[0], LAB[1]));
+			}
 		}
-		this.update();
+		// if robot data is not defined, define one
+		if (typeof self.robot_data == "undefined")
+		{
+			self.robot_data = new robotData();
+			self.robot_data.update();
+		}
+		update();
 	}
 }
