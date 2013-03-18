@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Debugger for Autolab</title>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
+		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
+		<script src="plot_methods.js"></script>
+	</head>
+	<body background="">
+		<div id="labLogo"></div>
+		<br />
+		<div id="redisServer"></div>
+		<div id="keySetter"></div>
+		<div id="staticPlot"></div>
+		<p id="debug">debug: </p>
+		<p id="send">send: </p>
+		<p id="receive">receive: </p>
+		<script type="text/javascript">
+var ll = new labLogo();
+ll.show();
+
+var rs = new redisServer();
+rs.show();
+
+var sp = new staticPlot();
+sp.show();
+
+var ks = new keySetter();
+ks.show();
+		</script>
+	</body>
+</html>

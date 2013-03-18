@@ -1,5 +1,6 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"], LABEL = ["frame", "x", "y", "voltage", "current"];
+var LAB = [49.276802, -122.914913], LABEL = ["frame", "x", "y", "voltage", "current"];
+//var ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"];
 /**
  * @class create a php communication
  */
@@ -14,7 +15,7 @@ var phpComm = function ()
 	 * PHP file name to be called
 	 * @public
 	 */
-	this.file = "call_method";
+	this.file = "comp_methods";
 	/**
 	 * cmd to be transmitted to PHP
 	 * @public
@@ -56,6 +57,10 @@ var phpComm = function ()
 	 */
 	var send_time = [0], rec_time = 0;
 	var self = this;
+	this.getRecTime = function ()
+	{
+		return rec_time;
+	}
 	/**
 	 * how long since the latest time of receiving data, in order to test if the server works
 	 * @public
@@ -146,6 +151,7 @@ var phpComm = function ()
  */
 var robotName = function ()
 {
+	this.canvas = "robotName";
 	/**
 	 * create a php communication
 	 * @public
@@ -209,6 +215,20 @@ var robotName = function ()
 			}
 		}
 		setTimeout(self.update, self.timeout);
+	}
+	this.show = function ()
+	{
+		var html = 	'<ul align="center">';
+		for (var i in name)
+		{
+			html +=		'<li style="display:inline;margin:3%;">' +
+							'<a href="?robot=' + name[i] + '">' + name[i] + '</a>' +
+						'</li>';
+		}
+		html +=		'</ul>';
+		document.getElementById(self.canvas).innerHTML = html;
+		//self.update();
+		setTimeout(self.show, self.timeout);
 	}
 }
 /**
@@ -288,7 +308,7 @@ var robotData = function ()
 			self.rn.update();
 		}
 		var name = self.rn.getNames();
-		self.php_comm.cmd = "method=get_robot_data";
+		self.php_comm.cmd = "method=getRobotData";
 		self.php_comm.commPhp();
 		var robot = self.php_comm.receive.split(", ");
 		// for each robot
@@ -302,9 +322,9 @@ var robotData = function ()
 			var tmp = robot[i].split(" ");
 			var robot_tmp = new Object();
 			// for each value
-			for (var j in tmp)
+			for (var j = 0; j < tmp.length; j += 2)
 			{
-				robot_tmp[LABEL[j]] = parseFloat(tmp[j]);
+				robot_tmp[tmp[j]] = parseFloat(tmp[j + 1]);
 			}
 			robot_data[name[i]] = robot_tmp;
 		}
@@ -377,10 +397,11 @@ var labLogo = function ()
 			html += 
 				'<table border="1" align="' + self.align + '" width="' + self.width + '">' +
 					'<tr align="' + self.align + '">' +
-						/**
-						 * \todo change the following links into suitable ones.
-						 */
+						//@todo change the following links into suitable ones.
 						'<td><a href="./index.html">index</a></td>' +
+						'<td><a href="./debugger.html">debugger</a></td>' +
+						'<td><a href="./example.html">example</a></td>' +
+						'<td><a href="./test.html">test</a></td>' +
 						'<td><a href="./status.html">status</a></td>' +
 						'<td><a href="./data_generator.html">data generator</a></td>' +
 						'<td><a href="./dataparser/index.html">data parser</a></td>' +
@@ -390,7 +411,6 @@ var labLogo = function ()
 						'<td><a href="./dynamic-robot.html">dynamic plot for one robot</a></td>' +
 						'<td><a href="./trajectory.html">trajectory plot</a></td>' +
 						'<td><a href="./gmap.html">google map</a></td>' +
-						'<td><a href="./test.html">test</a></td>' +
 					'</tr>' +
 				'</table>';
 		}
@@ -527,7 +547,7 @@ var serverStatus = function ()
 	 * the fixed number of status elements
 	 * @public
 	 */
-	this.fix_count = 20;
+	this.fix_count = 10;
 	/**
 	 * create a php communication
 	 * @public
@@ -782,8 +802,7 @@ var keySetter = function ()
 				}
 			}
 		}
-		self.php_comm.file = "data_generator";
-		self.php_comm.cmd = data;
+		self.php_comm.cmd = data + "&method=generateData";
 		self.php_comm.commPhp();
 		setTimeout(update, self.timeout);
 	}
@@ -880,7 +899,7 @@ var staticPlot = function ()
 	/**
 	 * @public
 	 */
-	this.width = "100%";
+	this.width = "95%";
 	/**
 	 * @public
 	 */
@@ -915,6 +934,13 @@ var staticPlot = function ()
 	 */
 	this.php_comm = new phpComm();
 	/**
+	 * create a safe-range
+	 * @public
+	 */
+	this.safe_range_array = new Array();
+	this.threshold = {below: 2, color: "black"};
+	this.robot = "cb18";
+	/**
 	 * options for the plot
 	 * @public
 	 */
@@ -924,12 +950,18 @@ var staticPlot = function ()
 			points: {show: true}
 		},
 		crosshair: {mode: "x"},
+		//selection: {mode: "xy"},
+		zoom: {interactive: true},
+		pan: {interactive: true},
+		//@bug
+		//xaxis: {mode: "time", minTickSize: [1, "hour"], min: (new Date(2013, 4, 1)).getTime(), min: (new Date(2013, 5, 1)).getTime(), twelveHourClock: true},
+		legend: { position: "nw" },
 		grid: {
 			show: true,
 			hoverable: true,
 			autoHighlight: false
 	}};
-	var last_ret = "", plot;
+	var update_time = 0, plot, dataset, hover_pos, updateLegendTimeout, zoom_range = new Array();
 	var self = this;
 	/**
 	 * plot periodically
@@ -937,51 +969,104 @@ var staticPlot = function ()
 	 */
 	var update = function()
 	{
-		var rec = self.php_comm.receive;
+		var time_tmp = self.php_comm.getRecTime();
 		// if we have new data from Redis
-		if (rec != last_ret)
+		if (time_tmp != update_time)
 		{
-			last_ret = rec;
-			var data = new Array();
+			update_time = time_tmp;
+			var rec = self.php_comm.receive;
+			dataset = new Array();
 			var tmp = rec.split(", ");
 			// if there is only one string of data
 			if (tmp.length <= 1 || (tmp.length == 2 && tmp[1].length <= 1))
 			{
-				var tmp2 = tmp[0].split(" ");
+				var tmp2 = tmp[0].split(" "), data2 = new Array();
 				for (var i in tmp2)
 				{
-					data.push([i, tmp2[i]]);
+					data2.push([i, tmp2[i]]);
 				}
-				// @todo specify the threshold
-				$.plot("#" + self.placeholder, [{data: data, threshold: {below: 3, color: "rgb(0, 0, 0)"}}], self.option);
+				dataset.push({label: self.key + " = 0.00", data: data2, threshold: self.threshold});
+				$.plot("#" + self.placeholder, dataset, self.option);
 			} else // multi strings of data
 			{
 				// obtain the amount of curves
 				var tmp2 = tmp[0].split(" ");
-				for (var j = 2; j < tmp2.length; ++ j)
+				for (var i = 4; i + 1 < tmp2.length; i += 2)
 				{
-					data.push({label: LABEL[j - 1], data: new Array(), yaxis: j - 1})
+					dataset.push({label: tmp2[i] + " = 0.00", data: new Array(), yaxis: i/2 - 1, threshold: {color: self.threshold.color} });
+					// if have corresponding safe-range
+					for (var j in self.safe_range_array)
+					{
+						if (! self.safe_range_array[j].checked)
+							break;
+						if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == tmp2[i])
+						{
+							dataset[dataset.length - 1].threshold.below = self.safe_range_array[j].min;
+							break;
+						}
+					}
 				}
 				for (var i in tmp)
 				{
 					if (self.max_points > 0 && i > self.max_points)
 						break;
 					tmp2 = tmp[i].split(" ");
-					for (var j = 2; j < tmp2.length; ++ j)
+					var len = Math.min(dataset.length + 2, tmp2.length / 2);
+					var time = parseFloat(tmp2[1]);
+					for (var j = 2; j < len; ++ j)
 					{
-						var tmp3 = parseFloat(tmp2[j]);
-						if (tmp3 == undefined || isNaN(tmp3))
+						var tmp3 = parseFloat(tmp2[j * 2 + 1]);
+						if (typeof tmp3 == "undefined" || isNaN(tmp3))
 						{
-							continue;
+							tmp3 = 0;
 						}
-						data[j - 2].data.push([i, tmp3]);
+						dataset[j - 2].data.push([time, tmp3]);
 					}
 				}
-				$.plot("#" + self.placeholder, data, self.option);
+				$.plot("#" + self.placeholder, dataset, self.option);
 			}
 		}
 		setTimeout(update, self.timeout);
 	};
+	//
+	var updateLegend = function ()
+	{
+		updateLegendTimeout = null;
+		var pos = hover_pos;
+		var axes = plot.getAxes();
+		// we don't need to test if it is inside of the canvas
+		/*if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
+		{
+			return;
+		}*/
+		var ans;
+		for (var i = 0; i < dataset.length; ++ i)
+		{
+			var series = dataset[i];
+			// Find the nearest points in x-wise
+			for (var j = 0; j < series.data.length; ++ j)
+			{
+				if (series.data[j][0] > pos.x)
+				{
+					// Interpolate
+					var p1 = series.data[j - 1], p2 = series.data[j];
+					if (p1 == null)
+					{
+						ans = p2[1];
+					} else if (p2 == null)
+					{
+						ans = p1[1];
+					} else
+					{
+						// it is originally string
+						ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+					}
+					break;
+				}
+			}
+			$("#" + self.placeholder + " .legendLabel").eq(i).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+		}
+	}
 	/**
 	 * show this object, add callbacks, and start to plot periodically
 	 * @public
@@ -990,54 +1075,107 @@ var staticPlot = function ()
 	{
 		var html =
 			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
-			'<div align="' + self.align + '"><form>' +
-				'key<input type="text" name="key" value="' + self.key + '" />' +
+			'<form>' +
+				'<button type="button" name="clear">clear</button>' +
+				//'<button type="button" name="zoom">zoom</button>' +
+				' key<input type="text" name="key" value="' + self.key + '" />' +
 				'<input type="button" value="submit" />' +
-			'</form></div>' +
-			'<div align="' + self.align + '"><form>' +
-				'backup data: robot<input type="text" name="robot" value="cb18" />' +
+				' backup data: robot<input type="text" name="robot" value="' + self.robot + '" />' +
 				'<input type="button" value="submit" />' +
-			'</form></div>' +
-			'<div align="' + self.align + '"><form>' +
-				'robot<input type="text" name="robot" value="cb18" />' +
-				'year<input type="text" name="year" value="2013" />' +
-				'month<input type="text" name="month" value="Mar" />' +
-				'day<input type="text" name="day" value="1" />' +
-				'hour<input type="text" name="hour" value="0" />' +
-				'minute<input type="text" name="minute" value="0" />' +
-				'second<input type="text" name="second" value="0" />' +
+			'</form>' +
+			'<form>' +
+				'robot<input type="text" name="robot" value="' + self.robot + '" />' +
+				'label<input type="text" name="label" value="' + self.label + '" />' +
+				'start<input type="text" name="dtpicker" id="sp_dtpicker1" value="" />' +
+				'end<input type="text" name="dtpicker" id="sp_dtpicker2" value="" />' +
 				'duration (s)<input type="text" name="duration" value="3600" />' +
 				'<input type="button" value="submit" />' +
-			'</form></div>';
+			'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
+		$('#sp_dtpicker1').datetimepicker({
+			showSecond: true,
+			timeFormat: 'HH:mm:ss',
+			stepHour: 2,
+			stepMinute: 10,
+			stepSecond: 10
+		});
+		$('#sp_dtpicker2').datetimepicker({
+			showSecond: true,
+			timeFormat: 'HH:mm:ss',
+			stepHour: 2,
+			stepMinute: 10,
+			stepSecond: 10
+		});
+		// add callback to clear button
+		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
+		{
+			plot = $.plot("#" + self.placeholder, [[]], self.option);
+		}
+		// add callback to zoom button
+		/*document.getElementById(self.canvas).getElementsByTagName("button")[1].onclick = function ()
+		{
+			plot = $.plot("#" + self.placeholder, dataset,
+				$.extend(true, {}, self.option, {
+					xaxis: { min: zoom_range[0], max: zoom_range[1] },
+					yaxis: { min: zoom_range[2], max: zoom_range[3] }
+				})
+			);
+		}*/
 		var input_array = document.getElementById(self.canvas).getElementsByTagName("input");
 		// add callback to getKey button
 		input_array[1].onclick = function ()
 		{
-			var key = this.form.key.value;
-			if (typeof key != "undefined" && key != "")
+			self.key = this.form.key.value;
+			if (typeof self.key != "undefined" && self.key != "")
 			{
-				self.php_comm.cmd = "method=get_key&key=" + key;
+				self.php_comm.cmd = "method=getKey&key=" + self.key;
 				self.php_comm.commPhp();
 			}
 		}
 		// add callback to getOldData button
 		input_array[3].onclick = function ()
 		{
-			var robot = this.form.robot.value;
-			if (typeof robot != "undefined" && robot != "")
+			self.robot = this.form.robot.value;
+			if (typeof self.robot != "undefined" && self.robot != "")
 			{
-				self.php_comm.cmd = "method=getOldData&robot=" + robot;
+				self.php_comm.cmd = "method=getPreviousData&robot=" + self.robot + "&num=100";
 				self.php_comm.commPhp();
 			}
 		}
 		// add callback to historicData button
 		input_array[input_array.length - 1].onclick = function ()
 		{
-			self.php_comm.cmd = "method=historicData&robot=" + this.form.robot.value + "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value + "&duration=" + this.form.duration.value;
+			self.robot = this.form.robot.value;
+			alert($('#sp_dtpicker1').datetimepicker('getDate') + " - " + $('#sp_dtpicker1').datetimepicker('getDate'));
+			self.php_comm.cmd = "method=historicData&robot=" + this.form.robot.value + "&label=" + this.form.label.value + "&from=" + $('#sp_dtpicker1').datetimepicker('getDate') + "&to=" + $('#sp_dtpicker1').datetimepicker('getDate') + "&duration=" + this.form.duration.value + "&num=100";
 			self.php_comm.commPhp();
 		}
+		// initial
 		plot = $.plot("#" + self.placeholder, [[]], self.option);
+		// add legend tracking
+		$("#"+self.placeholder).bind("plothover",  function (event, pos, item)
+		{
+			hover_pos = pos;
+			if (!updateLegendTimeout) {
+				updateLegendTimeout = setTimeout(updateLegend, 50);
+			}
+		});
+		//@deprecated add selected zooming
+		$("#" + self.placeholder).bind("plotselected", function (event, ranges)
+		{
+			// clamp the zooming to prevent eternal zoom
+			if (ranges.xaxis.to - ranges.xaxis.from < 0.00001) {
+				ranges.xaxis.to = ranges.xaxis.from + 0.00001;
+			}
+			if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
+				ranges.yaxis.to = ranges.yaxis.from + 0.00001;
+			}
+			//@bug with multi-axis
+			zoom_range[0] = ranges.xaxis.from;
+			zoom_range[1] = ranges.xaxis.to;
+			zoom_range[2] = ranges.yaxis.from;
+			zoom_range[3] = ranges.yaxis.to;
+		});
 		update();
 	}
 }
@@ -1088,23 +1226,22 @@ var timeTravel = function ()
 	 */
 	this.show = function ()
 	{
-		var html =
-			'<div align="' + this.align + '"><form>' +
-				'year<input type="text" name="year" value="2013" />' +
-				'month<input type="text" name="month" value="Mar" />' +
-				'day<input type="text" name="day" value="1" />' +
-				'hour<input type="text" name="hour" value="0" />' +
-				'minute<input type="text" name="minute" value="0" />' +
-				'second<input type="text" name="second" value="0" />' +
-				'<input type="button" value="submit" />' +
-			'</form></div>';
+		var html = 	'<input type="text" name="dtpicker" id="dtpicker" value="" />' +
+					'<button type="button" name="submit" >start time travelling</button>';
 		document.getElementById(self.canvas).innerHTML = html;
-		var input_array = document.getElementById(self.canvas).getElementsByTagName("input");
-		input_array[input_array.length - 1].onclick = function ()
+		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
 		{
-			cmd = "&year=" + this.form.year.value + "&month=" + this.form.month.value + "&day=" + this.form.day.value + "&hour=" + this.form.hour.value + "&minute=" + this.form.minute.value + "&second=" + this.form.second.value;
-			update();
+			cmd = $('#dtpicker').datetimepicker('getDate');
+			alert(cmd);
+			//update();
 		}
+		$('#dtpicker').datetimepicker({
+			showSecond: true,
+			timeFormat: 'HH:mm:ss',
+			stepHour: 2,
+			stepMinute: 10,
+			stepSecond: 10
+		});
 	}
 }
 /**
@@ -1262,11 +1399,11 @@ var trajPlot2 = function ()
 	/**
 	 * @public
 	 */
-	this.width = "600px";
+	this.width = "830px";
 	/**
 	 * @public
 	 */
-	this.height = "600px";
+	this.height = "340px";
 	/**
 	 * max points of a curve in the plot
 	 * @public
@@ -1331,7 +1468,7 @@ var trajPlot2 = function ()
 	{
 		// draw the static graphics by jsDraw2DX
 		gr = new jxGraphics(document.getElementById(self.placeholder));
-		var boundary = new jxRect(new jxPoint(0,0), 600, 600, new jxPen(new jxColor("grey"),'1px'));
+		var boundary = new jxRect(new jxPoint(0,0), 830, 340, new jxPen(new jxColor("grey"),'1px'));
 		boundary.draw(gr);
 		var grid = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
 		grid.draw(gr);
@@ -1461,30 +1598,137 @@ var dynamicPlot = function ()
 	 */
 	this.robot_data;
 	/**
+	 * selected robot
+	 * @public
+	 */
+	this.robot;
+	/**
+	 * selected label
+	 * @public
+	 */
+	this.label = "all";
+	/**
+	 * if to show the selections of robot and label
+	 * @public
+	 */
+	this.show_select = true;
+	/**
 	 * options for the plot
 	 * @public
 	 */
 	this.option = {
 		// drawing is faster without shadows
-		series: {shadowSize: 0, lines: {show: true} },
-		yaxis: { min: 0, max: 100 },
-		xaxis: { min: -this.total_points + 1, max: 0},
-		grid: {show: true}
+		series: {
+			shadowSize: 0,
+			lines: {show: true},
+			//points: {show: true} bad-looking
+		},
+		crosshair: {mode: "x"},
+		zoom: {interactive: true},
+		pan: {interactive: true},
+		// it can adjust automatically
+		//@bug still some bugs
+		//yaxis: { min: 0, max: 100 },
+		//@todo time mode
+		xaxis: { min: -this.total_points + 1, max: 0, zoomRange: [-this.total_points + 1, 0]},
+		grid: {show: true},
+		legend: { position: "nw" },
+		grid: {
+			show: true,
+			hoverable: true,
+			autoHighlight: false
+		}
 	};
-	var dataset = new Object(), plot;
+	this.safe_range_array = new Array();
+	var dataset = new Object(), plot, robot_name = new Array(), hover_pos, updateLegendTimeout;
 	var self = this;
+	var updateLegend = function ()
+	{
+		updateLegendTimeout = null;
+		var pos = hover_pos;
+		var axes = plot.getAxes();
+		var ans, i = 0;
+		for (var key in dataset)
+		{
+			if ("frame" == key)
+				continue;
+			var series = dataset[key];
+			// Find the nearest points in x-wise
+			for (var j = 0; j < series.data.length; ++ j)
+			{
+				if (series.data[j][0] > pos.x)
+				{
+					// Interpolate
+					var p1 = series.data[j - 1], p2 = series.data[j];
+					if (p1 == null)
+					{
+						ans = p2[1];
+					} else if (p2 == null)
+					{
+						ans = p1[1];
+					} else
+					{
+						// it is originally string
+						ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+					}
+					break;
+				}
+			}
+			$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+		}
+	}
+	var initData = function ()
+	{
+		dataset = new Object();
+		getData();
+		// generate data according to the format of Flot based on self.label
+		var data = new Array();
+		if ("all" == self.label)
+		{
+			for (i in dataset)
+			{
+				if ("frame" == i)
+				{
+					continue;
+				}
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
+					{
+						dataset[i].threshold.below = self.safe_range_array[j].min;
+						break;
+					}
+				}
+				data.push( dataset[i] );
+			}
+		} else
+		{
+			if (self.label in dataset)
+			{
+				data.push( dataset[self.label] );
+			}
+		}
+		if (data.length == 0)
+		{
+			data = [[]];
+		}
+		plot = $.plot("#" + self.placeholder, data, self.option);
+	}
 	var getData = function ()
 	{
-		// obtain robot data
-		var data_ret = new Array();
-		for (var i = 0; i < LABEL.length; ++ i)
-		{
-			data_ret[i] = self.robot_data.getData("cb18", LABEL[i]);
-		}
+		// obtain all robot data no matter what self.label is
+		var data_ret = self.robot_data.getRobot(self.robot);
 		var cnt = -1;
-		for (i in dataset)
+		for (i in data_ret)
 		{
 			++ cnt;
+			if (! (i in dataset))
+			{
+				dataset[i] = {label: i + " = 0.00", data: [], yaxis: cnt, threshold: {color: "black"}};
+			}
 			var tmp = new Array();
 			for (j in dataset[i].data)
 			{
@@ -1497,19 +1741,23 @@ var dynamicPlot = function ()
 			{
 				tmp = tmp.slice(1);
 			}
-			var y = 0;
+			var y = NaN;
+			if (typeof data_ret != "undefined" && typeof data_ret[i] != "undefined")
+			{
+				y = data_ret[i];
+			}
 			while (tmp.length < self.total_points)
 			{
-				y = data_ret[cnt];
-				tmp.push(y);
+				tmp.push(0);
 			}
+			tmp.push(y);
 			// add the number to the corresponding label
 			var lis = document.getElementById(self.canvas).getElementsByTagName("li");
 			for (var j = 0; j < lis.length; ++ j)
 			{
 				if (lis[j].innerText.length >= dataset[i].label.length && lis[j].innerText.substr(0, dataset[i].label.length) == dataset[i].label)
 				{
-					lis[j].innerHTML = dataset[i].label + ": " + Math.round(y*100)/100;
+					lis[j].innerHTML = dataset[i].label + ": " + y.toFixed(2);
 				}
 			}
 			// zip the generated y values with the x values
@@ -1527,11 +1775,48 @@ var dynamicPlot = function ()
 	 */
 	var update = function ()
 	{
-		getData();
-		var data = new Array();
-		for (var i = 1; i < LABEL.length; ++ i)
+		var tmp = self.robot_data.rn.getNames(), flag = false;
+		if (self.show_select)
 		{
-			data.push( dataset[LABEL[i]].data );
+			for (var i in tmp)
+			{
+				if (robot_name.indexOf(tmp[i]) == -1)
+				{
+					robot_name.push(tmp[i]);
+					document.getElementById(self.canvas).getElementsByTagName("select")[0].innerHTML += '<option value="' + tmp[i] + '">' + tmp[i] + '</option>';
+				}
+			}
+		}
+		getData();
+		// generate data according to the format of Flot based on self.label
+		var data = new Array();
+		if ("all" == self.label)
+		{
+			for (i in dataset)
+			{
+				if ("frame" == i)
+				{
+					continue;
+				}
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
+					{
+						dataset[i].threshold.below = self.safe_range_array[j].min;
+						break;
+					}
+				}
+				data.push( dataset[i] );
+			}
+		} else
+		{
+			if (self.label in dataset)
+			{
+				data.push( dataset[self.label] );
+			}
 		}
 		plot.setData( data );
 		plot.draw();
@@ -1548,9 +1833,24 @@ var dynamicPlot = function ()
 				'<tr>' +
 					'<td><div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div></td>' +
 					'<td width="' + self.text_width + '" align="center">' +
-						//@todo add a href to a single robot page
-						'<a href="">robot</a>' +
-						'<ul style="list-style-type:none;">' +
+						'<button type="button" name="clear">clear</button>';
+		if (self.show_select)
+		{
+			html += 	'<form align="' + self.align + '">' +
+							'<select name="robot">' +
+								'<option value="" selected="selected">select:</option>' +
+							'</select>' +
+							//@todo add corresponding labels
+							'<select name="label">' +
+								'<option value="all" selected="selected">all</option>' +
+								'<option value="x">x</option>' +
+								'<option value="y">y</option>' +
+								'<option value="voltage">voltage</option>' +
+								'<option value="current">current</option>' +
+							'</select>' +
+						'</form>';
+		}
+		html +=			'<ul style="list-style-type:none;">' +
 							//@todo add corresponding labels
 							'<li>x:</li>' +
 							'<li>y:</li>' +
@@ -1561,24 +1861,46 @@ var dynamicPlot = function ()
 				'</tr>' +
 			'</table>';
 		document.getElementById(self.canvas).innerHTML = html;
+		// add callback to clear button
+		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
+		{
+			initData();
+		}
+		var select_list = document.getElementById(self.canvas).getElementsByTagName("select");
+		if (select_list.length)
+		{
+			// add callback to robot select
+			select_list[0].onclick = function ()
+			{
+				if (this.form.robot.value == "" || this.form.robot.value == " " || this.form.robot.value == "select:" || this.form.robot.value == self.robot)
+					return;
+				self.robot = this.form.robot.value;
+				initData();
+			}
+			// add callback to label select
+			select_list[1].onclick = function ()
+			{
+				if (this.form.label.value == "" || this.form.label.value == " " || this.form.label.value == self.label)
+					return;
+				self.label = this.form.label.value;
+				initData();
+			}
+		}
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
 		{
 			self.robot_data = new robotData();
 			self.robot_data.update();
 		}
-		// generate the list of datasets by robot names and labels
-		for (var i = 0; i < LABEL.length; ++ i)
+		initData();
+		// add legend tracking
+		$("#"+self.placeholder).bind("plothover",  function (event, pos, item)
 		{
-			dataset[LABEL[i]] = {label: LABEL[i], data: []};
-		}
-		getData();
-		var data = new Array();
-		for (var i = 1; i < LABEL.length; ++ i)
-		{
-			data.push({label: dataset[LABEL[i]].label, data: dataset[LABEL[i]].data});
-		}
-		plot = $.plot("#" + self.placeholder, data, self.option);
+			hover_pos = pos;
+			if (!updateLegendTimeout) {
+				updateLegendTimeout = setTimeout(updateLegend, 50);
+			}
+		});
 		update();
 	}
 }
@@ -1643,7 +1965,9 @@ var safeRange = function ()
 	 * @public
 	 */
 	this.timeout = 300;
-	var checked = false, robot, label;
+	this.checked = false;
+	this.robot = undefined;
+	this.label = undefined;
 	var self = this;
 	/**
 	 * test if it in the safe-range
@@ -1651,7 +1975,7 @@ var safeRange = function ()
 	 */
 	var test_saferange = function (value)
 	{
-		if (checked && (value < self.min || value > self.max))
+		if (self.checked && (value < self.min || value > self.max))
 		{
 			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.alarm_text;
 			//alert(self.alarm_text);
@@ -1667,7 +1991,7 @@ var safeRange = function ()
 	var update = function ()
 	{
 		//var data = Math.round(Math.random() * 100);
-		var data = self.robot_data.getData(robot, label);
+		var data = self.robot_data.getData(self.robot, self.label);
 		document.getElementById(self.canvas).getElementsByTagName("p")[0].innerHTML = data;
 		test_saferange(data);
 		setTimeout(update, self.timeout);
@@ -1678,26 +2002,35 @@ var safeRange = function ()
 	 */
 	this.show = function ()
 	{
+		var r = self.robot, l = self.label;
+		if (typeof r == "undefined")
+		{
+			r = "";
+		}
+		if (typeof l == "undefined")
+		{
+			l = "";
+		}
 		var html =
 			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '">' +
 				'<tr align="' + self.align + '">' +
 					'<td>' +
-						'<form name="safe_range">' +
+						'<form name="source">' +
 						'safe-range<input type="checkbox" name="work">' +
+						'robot<input type="text" name="robot" value="' + r + '">' +
+						'label<input type="text" name="label" value="' + l + '">' +
+						'<input type="button" value="submit">' +
+						'</form>' +
+					'</td>' +
+					'<td>' +
+						'<form name="safe_range">' +
 						'min<input type="text" name="min" value="' + self.min + '">' +
 						'max<input type="text" name="max" value="' + self.max + '">' +
 						'<input type="button" value="submit">' +
 						'</form>' +
 					'</td>' +
-					'<td>' +
-						'<form name="source">' +
-						'robot<input type="text" name="robot" value="">' +
-						'label<input type="text" name="label" value="">' +
-						'<input type="button" value="submit">' +
-						'</form>' +
-					'</td>' +
-					'<td width="10%"><p></p></td>' +
-					'<td width="10%">' +
+					'<td width="5%"><p></p></td>' +
+					'<td width="5%">' +
 						'<p>' + self.safe_text + '</p>' +
 					'</td>' +
 				'</tr>' +
@@ -1706,22 +2039,22 @@ var safeRange = function ()
 		// callback of checkbox
 		document.getElementById(self.canvas).getElementsByTagName("input")[0].onchange = function ()
 		{
-			checked = this.checked;
+			self.checked = this.checked;
 //document.getElementById(self.debug).innerHTML = "debug: " + self.checked;
 		}
 		// callback of submit button of safe_range form
-		document.getElementById(self.canvas).getElementsByTagName("input")[3].onclick = function ()
+		document.getElementById(self.canvas).getElementsByTagName("input")[6].onclick = function ()
 		{
 			self.min = parseFloat(this.form.min.value);
 			self.max = parseFloat(this.form.max.value);
 //document.getElementById(self.debug).innerHTML = "debug: " + this.form.work.value + " " + self.min + " " + self.max;
 		}
 		// callback of submit button of source form
-		document.getElementById(self.canvas).getElementsByTagName("input")[6].onclick = function ()
+		document.getElementById(self.canvas).getElementsByTagName("input")[3].onclick = function ()
 		{
-			robot = this.form.robot.value;
-			label = this.form.label.value;
-//document.getElementById(self.debug).innerHTML = "debug: " + robot + " " + label;
+			self.robot = this.form.robot.value;
+			self.label = this.form.label.value;
+//document.getElementById(self.debug).innerHTML = "debug: " + self.robot + " " + self.label;
 		}
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
@@ -2008,11 +2341,12 @@ var trajGmap = function ()
 		{
 			//[bug] simply clear all grids in every iteration. Perhaps there is a better way
 			clearGrid();
+			// I guess it is the way to calculate the grid size
 			var grid_size = .001 * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
 			var center_pos = coordToGrid(map.getCenter().lat(), map.getCenter().lng());
-			self.grid_php_comm.cmd = "method=cal_grid&grid_size=" + grid_size + "&type=" + view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
+			self.grid_php_comm.cmd = "method=calGrid&grid_size=" + grid_size + "&type=" + view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
 			self.grid_php_comm.commPhp();
-			// separate the data into different robots
+			// separate the data into different grids
 			var ret = self.grid_php_comm.receive.split(" ");
 			var dist, min;
 			for (var i = 0; i + 3 < ret.length; i += 4)
@@ -2106,7 +2440,7 @@ var trajGmap = function ()
 				'</tr>' +
 			'</table>';
 		document.getElementById(self.canvas).innerHTML = html;
-		var select = document.getElementsByTagName("select");
+		var select = document.getElementById(self.canvas).getElementsByTagName("select");
 		// add callback to view select
 		select[0].onclick = function ()
 		{

@@ -2,18 +2,27 @@
 <html>
 	<head>
 		<title>Demonstration for Autolab</title>
-		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
+		<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.10.0/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" media="all" type="text/css" href="./jquery-ui/jquery-ui-timepicker-addon.css" />
+		<script type="text/javascript" src="./jquery-ui/jquery-1.9.1.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.selection.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-timepicker-addon.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 		<meta charset="utf-8">
 		<style>
-			html, body, #map_canvas
+			html, body
 			{
 				margin: 0;
 				padding: 0;
-				height: 50%;
+				height: 60%;
 				width: 100%;
 			}
 		</style>
@@ -36,35 +45,21 @@ google.maps.event.addDomListener(window, 'load', function ()
 	</head>
 	<body background="">
 		<div id="labLogo"></div>
+		<div style="height:100%;width:50%;float:left;">
+			<div id="map_canvas" style="height:100%;width:100%;"></div>
+			<div id="trajGmap"></div>
+		</div>
+		<div id="trajPlot2"></div>
 		<br />
-		<div id="map_canvas"></div>
-		<div id="trajGmap"></div>
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
 				<td width="70%" align="center" valign="top">
 					<div id="timeTravel"></div>
-					<ul align="center">
-						<li style="display:inline;margin:3%;">
-							<a href="?robot=1">robot 1</a>
-						</li>
-						<li style="display:inline;margin:3%;">
-							<a href="?robot=2">robot 2</a>
-						</li>
-						<li style="display:inline;margin:3%;">
-							<a href="?robot=3">robot 3</a>
-						</li>
-						<li style="display:inline;margin:3%;">
-							<a href="?robot=4">robot 4</a>
-						</li>
-					</ul>
+					<div id="robotName"></div>
 					<div id="dynamicPlot"></div>
 					<div id="safeRange"></div>
-					<div id="trajPlot2"></div>
-					<hr />
 					<br />
 					<div id="staticPlot"></div>
-					<br />
-					<div id="keySetter"></div>
 				</td>
 				<td valign="top">
 					<div id="redisServer"></div>
@@ -79,37 +74,32 @@ google.maps.event.addDomListener(window, 'load', function ()
 var ll = new labLogo();
 ll.show();
 
-var conf = new Object();
-conf.horizontal = 0;
-var rs = new redisServer(conf);
+var rs = new redisServer();
+rs.horizontal = false;
 rs.show();
 
 tg.show();
 
-/*var tc = new timeTravel();
-tc.show();*/
+var rn = new robotName();
+rn.update();
+rn.show();
+
+var tc = new timeTravel();
+tc.show();
 
 var tp2 = new trajPlot2();
-tp2.robot_data.php_comm.setServer(rs);
 tp2.show();
 
 var dp = new dynamicPlot();
-dp.robot_data.php_comm.setServer(rs);
 dp.show();
 
 var sp = new staticPlot();
-sp.php_comm.setServer(rs);
 sp.show();
-
-var ks = new keySetter();
-ks.php_comm.setServer(rs);
-ks.show();
 
 var sr = new safeRange();
 sr.show();
 
 var ss = new serverStatus();
-ss.php_comm.setServer(rs);
 ss.show();
 		</script>
 	</body>
