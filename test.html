@@ -4,6 +4,7 @@
 		<title>Tester for Autolab</title>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
 		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -13,14 +14,14 @@
 			{
 				margin: 0;
 				padding: 0;
-				height: 90%;
+				height: 1%;
 				width: 100%;
 			}
 		</style>
 		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
 		<script src="plot_methods.js"></script>
 		<script type="text/javascript">
-var tg = new trajGmap();
+/*var tg = new trajGmap();
 google.maps.event.addDomListener(window, 'load', function ()
 {
 	var map = new google.maps.Map(document.getElementById('map_canvas'),
@@ -31,7 +32,7 @@ google.maps.event.addDomListener(window, 'load', function ()
 		title: 'Autonomy Lab at Simon Fraser University'
 	});
 	tg.setMap(map);
-});
+});*/
 		</script>
 	</head>
 	<body>
@@ -73,8 +74,8 @@ ss.show();*/
 ks.meaning = 1;
 ks.show();*/
 
-/*var sp = new staticPlot();
-sp.show();*/
+var sp = new staticPlot();
+sp.show();
 
 /*var tp1 = new trajPlot1();
 tp1.show();*/
@@ -82,13 +83,15 @@ tp1.show();*/
 /*var tp2 = new trajPlot2();
 tp2.show();*/
 
-/*var dp = new dynamicPlot();
-dp.show();*/
+var dp = new dynamicPlot();
+//dp.robot = "cb18";
+//dp.show_select = false;
+dp.show();
 
 /*var sr = new safeRange();
 sr.show();*/
 
-tg.show();
+//tg.show();
 
 /*var rd = new robotData();
 rd.update();*/

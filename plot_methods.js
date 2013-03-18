@@ -1,5 +1,6 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"], LABEL = ["frame", "x", "y", "voltage", "current"];
+var LAB = [49.276802, -122.914913], LABEL = ["frame", "x", "y", "voltage", "current"];
+//var ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"];
 /**
  * @class create a php communication
  */
@@ -929,7 +930,7 @@ var staticPlot = function ()
 			hoverable: true,
 			autoHighlight: false
 	}};
-	var last_ret = "", plot;
+	var last_ret = "", plot, hover_pos, updateLegendTimeout;
 	var self = this;
 	/**
 	 * plot periodically
@@ -953,7 +954,7 @@ var staticPlot = function ()
 					data.push([i, tmp2[i]]);
 				}
 				// @todo specify the threshold
-				$.plot("#" + self.placeholder, [{data: data, threshold: {below: 3, color: "rgb(0, 0, 0)"}}], self.option);
+				$.plot("#" + self.placeholder, [{data: data, threshold: {below: 2, color: "black"}}], self.option);
 			} else // multi strings of data
 			{
 				// obtain the amount of curves
@@ -967,14 +968,17 @@ var staticPlot = function ()
 					if (self.max_points > 0 && i > self.max_points)
 						break;
 					tmp2 = tmp[i].split(" ");
-					for (var j = 2; j < tmp2.length; ++ j)
+					var len = Math.min(data.length, tmp2.length);
+					for (var j = 2; j < len; ++ j)
 					{
 						var tmp3 = parseFloat(tmp2[j]);
-						if (tmp3 == undefined || isNaN(tmp3))
+						if (typeof tmp3 == "undefined" || isNaN(tmp3))
 						{
-							continue;
+							data[j - 2].data.push([i, 0]);
+						} else
+						{
+							data[j - 2].data.push([i, tmp3]);
 						}
-						data[j - 2].data.push([i, tmp3]);
 					}
 				}
 				$.plot("#" + self.placeholder, data, self.option);
@@ -982,6 +986,44 @@ var staticPlot = function ()
 		}
 		setTimeout(update, self.timeout);
 	};
+	//
+	var updateLegend = function ()
+	{
+		updateLegendTimeout = null;
+		var pos = hover_pos;
+		var axes = plot.getAxes();
+		if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
+		{
+			//return;
+		}
+		var dataset = plot.getData(), ans;
+		for (var i = 0; i < dataset.length; ++ i)
+		{
+			var series = dataset[i];
+document.getElementById("debug").innerHTML = "debug: " + dataset.length;
+			// Find the nearest points in x-wise
+			for (var j = 0; j < series.data.length; ++ j)
+			{
+				if (series.data[j][0] > pos.x)
+				{
+					// Interpolate
+					var p1 = series.data[j - 1], p2 = series.data[j];
+					if (p1 == null)
+					{
+						ans = p2[1];
+					} else if (p2 == null)
+					{
+						ans = p1[1];
+					} else
+					{
+						ans = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+					}
+					break;
+				}
+			}
+			$("#" + self.placeholder + " .legendLabel").eq(i).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+		}
+	}
 	/**
 	 * show this object, add callbacks, and start to plot periodically
 	 * @public
@@ -1038,6 +1080,12 @@ var staticPlot = function ()
 			self.php_comm.commPhp();
 		}
 		plot = $.plot("#" + self.placeholder, [[]], self.option);
+		$("#"+self.placeholder).bind("plothover",  function (event, pos, item) {
+			hover_pos = pos;
+			if (!updateLegendTimeout) {
+				updateLegendTimeout = setTimeout(updateLegend, 50);
+			}
+		});
 		update();
 	}
 }
@@ -1461,25 +1509,88 @@ var dynamicPlot = function ()
 	 */
 	this.robot_data;
 	/**
+	 * selected robot
+	 * @public
+	 */
+	this.robot;
+	/**
+	 * selected label
+	 * @public
+	 */
+	this.label = "all";
+	/**
+	 * if to show the selections of robot and label
+	 * @public
+	 */
+	this.show_select = true;
+	this.have_threshold = true;
+	this.threshold = {
+		"voltage": {
+			below: 10,
+			above: 80
+		},
+		"current": {
+			below: 10,
+			above: 80
+		},
+	};
+	/**
 	 * options for the plot
 	 * @public
 	 */
 	this.option = {
 		// drawing is faster without shadows
-		series: {shadowSize: 0, lines: {show: true} },
-		yaxis: { min: 0, max: 100 },
-		xaxis: { min: -this.total_points + 1, max: 0},
-		grid: {show: true}
+		series: {
+			shadowSize: 0,
+			lines: {show: true},
+			//points: {show: true} bad-looking
+		},
+		crosshair: {mode: "x"},
+		// it can adjust automatically
+		//@bug still some bugs
+		//yaxis: { min: 0, max: 100 },
+		//@todo time mode
+		xaxis: { min: -this.total_points + 1, max: 0, mode: "time"},
+		grid: {show: true},
+		legend: { position: "nw" },
 	};
-	var dataset = new Object(), plot;
+	var dataset = new Object(), plot, robot_name = new Array();
 	var self = this;
+	var initData = function ()
+	{
+		dataset = new Object();
+		// generate the list of datasets by robot names and labels, no matter what self.label initial value is
+		for (var i = 0; i < LABEL.length; ++ i)
+		{
+			dataset[LABEL[i]] = {label: LABEL[i], data: []};
+			if (self.have_threshold && (LABEL[i] in self.threshold))
+			{
+				dataset[LABEL[i]].threshold = self.threshold[LABEL[i]];
+				dataset[LABEL[i]].threshold.color = "black";
+			}
+		}
+		getData();
+		// generate data according to the format of Flot based on self.label
+		var data = new Array();
+		if ("all" == self.label)
+		{
+			for (var i = 1; i < LABEL.length; ++ i)
+			{
+				data.push( dataset[LABEL[i]] );
+			}
+		} else
+		{
+			data.push( dataset[self.label] );
+		}
+		plot = $.plot("#" + self.placeholder, data, self.option);
+	}
 	var getData = function ()
 	{
-		// obtain robot data
+		// obtain all robot data no matter what self.label is
 		var data_ret = new Array();
 		for (var i = 0; i < LABEL.length; ++ i)
 		{
-			data_ret[i] = self.robot_data.getData("cb18", LABEL[i]);
+			data_ret[i] = self.robot_data.getData(self.robot, LABEL[i]);
 		}
 		var cnt = -1;
 		for (i in dataset)
@@ -1497,12 +1608,12 @@ var dynamicPlot = function ()
 			{
 				tmp = tmp.slice(1);
 			}
-			var y = 0;
+			var y = data_ret[cnt];
 			while (tmp.length < self.total_points)
 			{
-				y = data_ret[cnt];
-				tmp.push(y);
+				tmp.push(0);
 			}
+			tmp.push(y);
 			// add the number to the corresponding label
 			var lis = document.getElementById(self.canvas).getElementsByTagName("li");
 			for (var j = 0; j < lis.length; ++ j)
@@ -1527,11 +1638,30 @@ var dynamicPlot = function ()
 	 */
 	var update = function ()
 	{
-		getData();
-		var data = new Array();
-		for (var i = 1; i < LABEL.length; ++ i)
+		var tmp = self.robot_data.rn.getNames(), flag = false;
+		if (self.show_select)
 		{
-			data.push( dataset[LABEL[i]].data );
+			for (var i in tmp)
+			{
+				if (robot_name.indexOf(tmp[i]) == -1)
+				{
+					robot_name.push(tmp[i]);
+					document.getElementById(self.canvas).getElementsByTagName("select")[0].innerHTML += '<option value="' + tmp[i] + '">' + tmp[i] + '</option>';
+				}
+			}
+		}
+		getData();
+		// generate data according to the format of Flot based on self.label
+		var data = new Array();
+		if ("all" == self.label)
+		{
+			for (var i = 1; i < LABEL.length; ++ i)
+			{
+				data.push( dataset[LABEL[i]] );
+			}
+		} else
+		{
+			data.push( dataset[self.label] );
 		}
 		plot.setData( data );
 		plot.draw();
@@ -1548,9 +1678,24 @@ var dynamicPlot = function ()
 				'<tr>' +
 					'<td><div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div></td>' +
 					'<td width="' + self.text_width + '" align="center">' +
-						//@todo add a href to a single robot page
-						'<a href="">robot</a>' +
-						'<ul style="list-style-type:none;">' +
+						'<button type="button" name="clear">clear</button>';
+		if (self.show_select)
+		{
+			html += 	'<form align="' + self.align + '">' +
+							'<select name="robot">' +
+								'<option value="" selected="selected">select:</option>' +
+							'</select>' +
+							//@todo add corresponding labels
+							'<select name="label">' +
+								'<option value="all" selected="selected">all</option>' +
+								'<option value="x">x</option>' +
+								'<option value="y">y</option>' +
+								'<option value="voltage">voltage</option>' +
+								'<option value="current">current</option>' +
+							'</select>' +
+						'</form>';
+		}
+		html +=			'<ul style="list-style-type:none;">' +
 							//@todo add corresponding labels
 							'<li>x:</li>' +
 							'<li>y:</li>' +
@@ -1561,24 +1706,38 @@ var dynamicPlot = function ()
 				'</tr>' +
 			'</table>';
 		document.getElementById(self.canvas).innerHTML = html;
+		// add callback to clear button
+		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
+		{
+			initData();
+		}
+		var select_list = document.getElementById(self.canvas).getElementsByTagName("select");
+		if (select_list.length)
+		{
+			// add callback to robot select
+			select_list[0].onclick = function ()
+			{
+				if (this.form.robot.value == "" || this.form.robot.value == " " || this.form.robot.value == "select:" || this.form.robot.value == self.robot)
+					return;
+				self.robot = this.form.robot.value;
+				initData();
+			}
+			// add callback to label select
+			select_list[1].onclick = function ()
+			{
+				if (this.form.label.value == "" || this.form.label.value == " " || this.form.label.value == self.label)
+					return;
+				self.label = this.form.label.value;
+				initData();
+			}
+		}
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
 		{
 			self.robot_data = new robotData();
 			self.robot_data.update();
 		}
-		// generate the list of datasets by robot names and labels
-		for (var i = 0; i < LABEL.length; ++ i)
-		{
-			dataset[LABEL[i]] = {label: LABEL[i], data: []};
-		}
-		getData();
-		var data = new Array();
-		for (var i = 1; i < LABEL.length; ++ i)
-		{
-			data.push({label: dataset[LABEL[i]].label, data: dataset[LABEL[i]].data});
-		}
-		plot = $.plot("#" + self.placeholder, data, self.option);
+		initData();
 		update();
 	}
 }
@@ -2008,11 +2167,12 @@ var trajGmap = function ()
 		{
 			//[bug] simply clear all grids in every iteration. Perhaps there is a better way
 			clearGrid();
+			// I guess it is the way to calculate the grid size
 			var grid_size = .001 * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
 			var center_pos = coordToGrid(map.getCenter().lat(), map.getCenter().lng());
 			self.grid_php_comm.cmd = "method=cal_grid&grid_size=" + grid_size + "&type=" + view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
 			self.grid_php_comm.commPhp();
-			// separate the data into different robots
+			// separate the data into different grids
 			var ret = self.grid_php_comm.receive.split(" ");
 			var dist, min;
 			for (var i = 0; i + 3 < ret.length; i += 4)
@@ -2106,7 +2266,7 @@ var trajGmap = function ()
 				'</tr>' +
 			'</table>';
 		document.getElementById(self.canvas).innerHTML = html;
-		var select = document.getElementsByTagName("select");
+		var select = document.getElementById(self.canvas).getElementsByTagName("select");
 		// add callback to view select
 		select[0].onclick = function ()
 		{

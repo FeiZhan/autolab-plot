@@ -4,6 +4,7 @@
 		<title>Demonstration for Autolab</title>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
 		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -13,7 +14,7 @@
 			{
 				margin: 0;
 				padding: 0;
-				height: 50%;
+				height: 70%;
 				width: 100%;
 			}
 		</style>
@@ -79,9 +80,8 @@ google.maps.event.addDomListener(window, 'load', function ()
 var ll = new labLogo();
 ll.show();
 
-var conf = new Object();
-conf.horizontal = 0;
-var rs = new redisServer(conf);
+var rs = new redisServer();
+rs.horizontal = false;
 rs.show();
 
 tg.show();
@@ -90,26 +90,21 @@ tg.show();
 tc.show();*/
 
 var tp2 = new trajPlot2();
-tp2.robot_data.php_comm.setServer(rs);
 tp2.show();
 
 var dp = new dynamicPlot();
-dp.robot_data.php_comm.setServer(rs);
 dp.show();
 
 var sp = new staticPlot();
-sp.php_comm.setServer(rs);
 sp.show();
 
 var ks = new keySetter();
-ks.php_comm.setServer(rs);
 ks.show();
 
 var sr = new safeRange();
 sr.show();
 
 var ss = new serverStatus();
-ss.php_comm.setServer(rs);
 ss.show();
 		</script>
 	</body>
