@@ -23,7 +23,7 @@
 			{
 				margin: 0;
 				padding: 0;
-				height: 60%;
+				height: 100%;
 				width: 100%;
 			}
 		</style>
@@ -46,21 +46,22 @@ google.maps.event.addDomListener(window, 'load', function ()
 	</head>
 	<body background="">
 		<div id="labLogo"></div>
-		<div style="height:100%;width:50%;float:left;">
-			<div id="map_canvas" style="height:100%;width:100%;"></div>
-			<div id="trajGmap"></div>
-		</div>
-		<div id="trajPlot2"></div>
+			<div style="align:center;height:35%;width:50%;float:left;">
+				<div id="map_canvas" style="height:100%;width:100%;"></div>
+				<div id="trajGmap"></div>
+			</div>
+			<div id="trajPlot2" align="center"></div>
 		<br />
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
 				<td width="70%" align="center" valign="top">
-					<div id="timeTravel"></div>
 					<div id="robotName"></div>
 					<div id="dynamicPlot"></div>
 					<div id="safeRange"></div>
 					<br />
 					<div id="staticPlot"></div>
+					<br />
+					<div id="timeTravel"></div>
 				</td>
 				<td valign="top">
 					<div id="redisServer"></div>

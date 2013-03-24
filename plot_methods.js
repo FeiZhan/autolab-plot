@@ -953,9 +953,14 @@ var staticPlot = function ()
 		//selection: {mode: "xy"},
 		zoom: {interactive: true},
 		pan: {interactive: true},
-		//@bug
 		xaxis: {
 			mode: "time"
+		},
+		yaxis: {
+			tickFormatter: function (v, axis)
+			{
+				return v.toFixed(2);
+			}
 		},
 		legend: { position: "nw" },
 		grid: {
@@ -1427,6 +1432,10 @@ var trajPlot2 = function ()
 	 */
 	this.height = "340px";
 	/**
+	 * @public
+	 */
+	this.align = "center";
+	/**
 	 * max points of a curve in the plot
 	 * @public
 	 */
@@ -1543,7 +1552,7 @@ var trajPlot2 = function ()
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + self.placeholder + '" style="overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + ';height:' + self.height + ';"></div>';
+			'<div id="' + self.placeholder + '" style="overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + ';height:' + self.height + ';align:' + self.align + ';"></div>';
 		document.getElementById(self.canvas).innerHTML = html;
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
@@ -1653,6 +1662,12 @@ var dynamicPlot = function ()
 		//yaxis: { min: 0, max: 100 },
 		//@todo time mode
 		xaxis: { min: -this.total_points + 1, max: 0, zoomRange: [-this.total_points + 1, 0]},
+		yaxis: {
+			tickFormatter: function (v, axis)
+			{
+				return v.toFixed(2);
+			}
+		},
 		grid: {show: true},
 		legend: { position: "nw" },
 		grid: {
