@@ -949,12 +949,14 @@ var staticPlot = function ()
 			lines: {show: true},
 			points: {show: true}
 		},
-		crosshair: {mode: "x"},
+		crosshair: {mode: "xy"},
 		//selection: {mode: "xy"},
 		zoom: {interactive: true},
 		pan: {interactive: true},
 		//@bug
-		//xaxis: {mode: "time", minTickSize: [1, "hour"], min: (new Date(2013, 4, 1)).getTime(), min: (new Date(2013, 5, 1)).getTime(), twelveHourClock: true},
+		xaxis: {
+			mode: "time"
+		},
 		legend: { position: "nw" },
 		grid: {
 			show: true,
@@ -977,6 +979,7 @@ var staticPlot = function ()
 			var rec = self.php_comm.receive;
 			dataset = new Array();
 			var tmp = rec.split(", ");
+document.getElementById("debug").innerHTML = "debug: " + tmp.length;
 			// if there is only one string of data
 			if (tmp.length <= 1 || (tmp.length == 2 && tmp[1].length <= 1))
 			{
@@ -1012,7 +1015,7 @@ var staticPlot = function ()
 						break;
 					tmp2 = tmp[i].split(" ");
 					var len = Math.min(dataset.length + 2, tmp2.length / 2);
-					var time = parseFloat(tmp2[1]);
+					var time = parseFloat(tmp2[1]) * 1000 - 1000 * 60 * 60 * 7;
 					for (var j = 2; j < len; ++ j)
 					{
 						var tmp3 = parseFloat(tmp2[j * 2 + 1]);
@@ -1075,7 +1078,7 @@ var staticPlot = function ()
 	{
 		var html =
 			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
-			'<form>' +
+			'<form align="' + self.align + '">' +
 				'<button type="button" name="clear">clear</button>' +
 				//'<button type="button" name="zoom">zoom</button>' +
 				' key<input type="text" name="key" value="' + self.key + '" />' +
@@ -1083,12 +1086,12 @@ var staticPlot = function ()
 				' backup data: robot<input type="text" name="robot" value="' + self.robot + '" />' +
 				'<input type="button" value="submit" />' +
 			'</form>' +
-			'<form>' +
+			'<form align="' + self.align + '">' +
 				'robot<input type="text" name="robot" value="' + self.robot + '" />' +
 				'label<input type="text" name="label" value="' + self.label + '" />' +
 				'start<input type="text" name="dtpicker" id="sp_dtpicker1" value="" />' +
 				'end<input type="text" name="dtpicker" id="sp_dtpicker2" value="" />' +
-				'duration (s)<input type="text" name="duration" value="3600" />' +
+				'duration (s)<input type="text" name="duration" value="" />' +
 				'<input type="button" value="submit" />' +
 			'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
@@ -1146,8 +1149,7 @@ var staticPlot = function ()
 		input_array[input_array.length - 1].onclick = function ()
 		{
 			self.robot = this.form.robot.value;
-			alert($('#sp_dtpicker1').datetimepicker('getDate') + " - " + $('#sp_dtpicker1').datetimepicker('getDate'));
-			self.php_comm.cmd = "method=historicData&robot=" + this.form.robot.value + "&label=" + this.form.label.value + "&from=" + $('#sp_dtpicker1').datetimepicker('getDate') + "&to=" + $('#sp_dtpicker1').datetimepicker('getDate') + "&duration=" + this.form.duration.value + "&num=100";
+			self.php_comm.cmd = "method=historicData&robot=" + this.form.robot.value + "&label=" + this.form.label.value + "&from=" + $('#sp_dtpicker1').datetimepicker('getDate') + "&to=" + $('#sp_dtpicker2').datetimepicker('getDate') + "&duration=" + this.form.duration.value + "&num=100";
 			self.php_comm.commPhp();
 		}
 		// initial
@@ -1208,16 +1210,24 @@ var timeTravel = function ()
 	 * @public
 	 */
 	this.php_comm = new phpComm();
-	var self = this, cmd = "";
+	var self = this, cmd = "", nexttime = 0, travel_flag = false;
 	/**
 	 * update data periodically
 	 * @private
 	 */
 	var update = function()
 	{
-		//@bug need to send value to tell PHP which
-		self.php_comm.cmd = "method=timeTravel" + cmd;
+		var now = (travel_flag && nexttime) ? new Date(nexttime * 1000) : "NaN";
+		document.getElementById(self.canvas).getElementsByTagName("span")[0].innerHTML = "timestamp: " + now + " framerate: " + self.timeout * 2;
+		self.php_comm.cmd = "method=timeTravel&timestamp=" + cmd + "&nexttime=" + nexttime;
 		self.php_comm.commPhp();
+		var rec = self.php_comm.receive.split(" ");
+		nexttime = parseFloat(rec[0]);
+		var tmp = parseFloat(rec[1]);
+		if (tmp < 100 && tmp > 0.01)
+		{
+			self.timeout = parseFloat(rec[1]) * 500; // divided by 2
+		}
 		setTimeout(update, self.timeout);
 	};
 	/**
@@ -1227,13 +1237,24 @@ var timeTravel = function ()
 	this.show = function ()
 	{
 		var html = 	'<input type="text" name="dtpicker" id="dtpicker" value="" />' +
-					'<button type="button" name="submit" >start time travelling</button>';
+					'<button type="button" name="submit" >start time travelling</button><span></span>';
 		document.getElementById(self.canvas).innerHTML = html;
 		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
 		{
-			cmd = $('#dtpicker').datetimepicker('getDate');
-			alert(cmd);
-			//update();
+			// if travelling, stop
+			if (nexttime)
+			{
+				cmd = "";
+				nexttime = 0;
+				travel_flag = false;
+				document.getElementById(self.canvas).getElementsByTagName("button")[0].innerHTML = "start time travelling";
+			} else // if not travelling, start
+			{
+				cmd = $('#dtpicker').datetimepicker('getDate');
+				nexttime = 0;
+				travel_flag = true;
+				document.getElementById(self.canvas).getElementsByTagName("button")[0].innerHTML = "stop time travelling";
+			}
 		}
 		$('#dtpicker').datetimepicker({
 			showSecond: true,
@@ -1242,6 +1263,7 @@ var timeTravel = function ()
 			stepMinute: 10,
 			stepSecond: 10
 		});
+		update();
 	}
 }
 /**
@@ -1968,7 +1990,7 @@ var safeRange = function ()
 	this.checked = false;
 	this.robot = undefined;
 	this.label = undefined;
-	var self = this;
+	var self = this, sound_timeout = 0;
 	/**
 	 * test if it in the safe-range
 	 * @private
@@ -1977,8 +1999,14 @@ var safeRange = function ()
 	{
 		if (self.checked && (value < self.min || value > self.max))
 		{
-			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.alarm_text;
+			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = '<font color="red">' + self.alarm_text + '</font>';
 			//alert(self.alarm_text);
+			if (0 == sound_timeout || new Date().getTime() - sound_timeout > 10000)
+			{
+				sound_timeout = new Date().getTime();
+				//$.playSound("jquery-play-sound/alarma.wav");
+				document.getElementById(self.canvas).getElementsByTagName("span")[0].innerHTML = '<embed src="jquery-play-sound/ALARM.WAV" height="0%" width="0%" hidden="true" autostart="true" loop="false" />';
+			}
 		} else
 		{
 			document.getElementById(self.canvas).getElementsByTagName("p")[1].innerHTML = self.safe_text;
@@ -2032,6 +2060,9 @@ var safeRange = function ()
 					'<td width="5%"><p></p></td>' +
 					'<td width="5%">' +
 						'<p>' + self.safe_text + '</p>' +
+					'</td>' +
+					'<td width="0%" height="0%">' +
+						'<span><embed width="0%" height="0%" hidden="true" /></span>' +
 					'</td>' +
 				'</tr>' +
 			'</table>';

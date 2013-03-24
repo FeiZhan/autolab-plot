@@ -62,7 +62,7 @@ function getNames()
 	global $client;
 	$len = $client->llen("robotname");
 	$tmp = $client->lrange("robotname", 0, $len);
-	// make it unique @bug don't need to do again in javascript
+	// make it unique. don't need to do again in javascript
 	$tmp = array_unique($tmp);
 	for ($i = 0; $i < $len; ++ $i)
 	{
@@ -73,13 +73,13 @@ function getNames()
 	}
 	return $tmp;
 }
-// get robot names
+// return robot names
 function returnNames()
 {
 	global $client;
 	$len = $client->llen("robotname");
 	$tmp = $client->lrange("robotname", 0, $len);
-	// make it unique @bug don't need to do again in javascript
+	// make it unique. don't need to do again in javascript
 	$tmp = array_unique($tmp);
 	for ($i = 0; $i < $len; ++ $i)
 	{
@@ -104,19 +104,20 @@ function getPreviousData()
 	}
 }
 // get old data between two time stamps
-//@bug need to improve
 function historicData()
 {
 	global $bak_client;
-	$year = is_numeric($_GET["year"]) ? $_GET["year"] : "2013";
-	$month = $_GET["month"];
-	$day = is_numeric($_GET["day"]) ? $_GET["day"] : "1";
-	$hour = is_numeric($_GET["hour"]) ? $_GET["hour"] : "0";
-	$minute = is_numeric($_GET["minute"]) ? $_GET["minute"] : "0";
-	$second = is_numeric($_GET["second"]) ? $_GET["second"] : "0";
-	$from = strtotime($day." ".$month." ".$year." ".$hour.":".$minute.":".$second);
-	$to = $from + intval($_GET["duration"]);
+	$from = strtotime($_GET["from"]);
+	// if duration is not valid, use "to"
+	if ($_GET["duration"] == "" || $_GET["duration"] == " " || $_GET["duration"] == "0")
+	{
+		$to = strtotime($_GET["to"]);
+	} else
+	{
+		$to = $from + intval($_GET["duration"]);
+	}
 	$key = $_GET["robot"]."-sorted";
+	// get data ranging from "from" to "to"
 	$tmp = $bak_client->zrangebyscore($key, $from, $to);
 	for ($i = 0; $i < count($tmp) && $i < $_GET["num"]; ++ $i)
 	{
@@ -124,45 +125,51 @@ function historicData()
 	}
 }
 // set old data to the place where current data exist
-//@bug need to improve
 function timeTravel()
 {
-	global $bak_client;
-	$names = getNames();
-	$year = is_numeric($_GET["year"]) ? $_GET["year"] : "2013";
-	$month = $_GET["month"];
-	$day = is_numeric($_GET["day"]) ? $_GET["day"] : "1";
-	$hour = is_numeric($_GET["hour"]) ? $_GET["hour"] : "0";
-	$minute = is_numeric($_GET["minute"]) ? $_GET["minute"] : "0";
-	$second = is_numeric($_GET["second"]) ? $_GET["second"] : "0";
-	$from = strtotime($day." ".$month." ".$year." ".$hour.":".$minute.":".$second);
-	foreach ($names as $i)
+	global $client, $bak_client;
+	if ($_GET["timestamp"] == "" || $_GET["timestamp"] == " " || $_GET["timestamp"] == "undefined")
 	{
-		$key = $i."-bak";
-		$length = - $bak_client->llen($key);
-		$find_flag = false;
-		for ($j = -1; $j > $length; -- $j)
+		echo "0 0";
+		return;
+	}
+	$names = returnNames();
+	$nexttime = intval($_GET["nexttime"]);
+	$next = PHP_INT_MAX;
+	// if "nexttime" is invalid, get timestamp from "timestamp", and determine "nexttime"
+	if ($_GET["nexttime"] == "" || 0 == $nexttime)
+	{
+		foreach ($names as $i)
 		{
-			$time = $bak_client->lrange($key, $j, $j);
-			$time = explode(" ", $time[0]);
-			$time = $time[0];
-			if ($time >= $from)
+			$key = $i."-sorted";
+			$tmp = $bak_client->zrangebyscore($key, strtotime($_GET["timestamp"]), "+inf");
+			$client->set($i, $tmp[0]);
+			$tmp = $tmp[0];
+			$index = $bak_client->zrank($key, $tmp);
+			$tmp = $bak_client->zrange($key, $index + 1, $index + 1);
+			$tmp = $bak_client->zscore($key, $tmp[0]);
+			if ($tmp < $next)
 			{
-				$find_flag = true;
-			}
-			else if ($time < $from)
-			{
-				break;
+				$next = $tmp;
 			}
 		}
-		if ($find_flag)
+	} else
+	{
+		foreach ($names as $i)
 		{
-			$tmp = $bak_client->lrange($key, $j + 1, $j + 1);
-			echo $tmp[0].", ";
-			//@todo delete the beginning timestamp, assign different values from then
-			//$client->set($i, $tmp[0]);
+			$key = $i."-sorted";
+			$tmp = $bak_client->zrangebyscore($key, $nexttime, $nexttime);
+			$client->set($i, $tmp[0]);
+			$index = $bak_client->zrank($key, $tmp[0]);
+			$tmp = $bak_client->zrange($key, $index + 1, $index + 1);
+			$tmp = $bak_client->zscore($key, $tmp[0]);
+			if ($tmp < $next)
+			{
+				$next = $tmp;
+			}
 		}
 	}
+	echo $next." ".($next - $nexttime);
 }
 // backup data into backup database when get_robot_data is called
 function backup($key, $data)
@@ -201,16 +208,16 @@ function field_robot($client_value)
 {
 	$c = explode(" ", $client_value);
 	// the time stamp of last cycle
-	$last_time = intval($c[0]);
+	$last_time = intval($c[1]);
 	// there is no previous values
 	if (count($c) < 3)
 	{
 		// the location of the lab
-		$c[1] = 49.276802;
-		$c[2] = -122.914913;
+		$c[3] = 49.276802;
+		$c[5] = -122.914913;
 	}
-	$x = floatval($c[1]) + rand(-10000, 10000) / 10000 * .001;
-	$y = floatval($c[2]) + rand(-10000, 10000) / 10000 * .001;
+	$x = floatval($c[3]) + rand(-10000, 10000) / 10000 * .001;
+	$y = floatval($c[5]) + rand(-10000, 10000) / 10000 * .001;
 	return "frame ".($last_time+1)." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100);
 }
 //@todo more functions for generating data should be added
