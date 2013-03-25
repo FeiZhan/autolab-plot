@@ -218,7 +218,7 @@ function field_robot($client_value)
 	}
 	$x = floatval($c[3]) + rand(-10000, 10000) / 10000 * .001;
 	$y = floatval($c[5]) + rand(-10000, 10000) / 10000 * .001;
-	return "frame ".($last_time+1)." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100);
+	return "frame ".($last_time+1)." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." state ".(rand(0, 5))." substate ".(rand(0, 5));
 }
 //@todo more functions for generating data should be added
 function generateData()

@@ -1,5 +1,5 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], LABEL = ["frame", "x", "y", "voltage", "current"];
+var LAB = [49.276802, -122.914913], LABEL = ["frame", "x", "y", "voltage", "current"], STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"];
 //var ROBOT_NAME = ["cb18", "cb01", "pi01", "hu01"];
 /**
  * @class create a php communication
@@ -984,7 +984,6 @@ var staticPlot = function ()
 			var rec = self.php_comm.receive;
 			dataset = new Array();
 			var tmp = rec.split(", ");
-document.getElementById("debug").innerHTML = "debug: " + tmp.length;
 			// if there is only one string of data
 			if (tmp.length <= 1 || (tmp.length == 2 && tmp[1].length <= 1))
 			{
@@ -999,9 +998,9 @@ document.getElementById("debug").innerHTML = "debug: " + tmp.length;
 			{
 				// obtain the amount of curves
 				var tmp2 = tmp[0].split(" ");
-				for (var i = 4; i + 1 < tmp2.length; i += 2)
+				for (var i = 2; i + 1 < tmp2.length; i += 2)
 				{
-					dataset.push({label: tmp2[i] + " = 0.00", data: new Array(), yaxis: i/2 - 1, threshold: {color: self.threshold.color} });
+					dataset.push({label: tmp2[i] + " = 0.00", data: new Array(), yaxis: i/2, threshold: {color: self.threshold.color} });
 					// if have corresponding safe-range
 					for (var j in self.safe_range_array)
 					{
@@ -1021,14 +1020,14 @@ document.getElementById("debug").innerHTML = "debug: " + tmp.length;
 					tmp2 = tmp[i].split(" ");
 					var len = Math.min(dataset.length + 2, tmp2.length / 2);
 					var time = parseFloat(tmp2[1]) * 1000 - 1000 * 60 * 60 * 7;
-					for (var j = 2; j < len; ++ j)
+					for (var j = 1; j < len; ++ j)
 					{
 						var tmp3 = parseFloat(tmp2[j * 2 + 1]);
 						if (typeof tmp3 == "undefined" || isNaN(tmp3))
 						{
 							tmp3 = 0;
 						}
-						dataset[j - 2].data.push([time, tmp3]);
+						dataset[j - 1].data.push([time, tmp3]);
 					}
 				}
 				$.plot("#" + self.placeholder, dataset, self.option);
@@ -1617,7 +1616,7 @@ var dynamicPlot = function ()
 	 * max points of a curve in the plot
 	 * @public
 	 */
-	this.total_points = 100;
+	this.total_points = 30;
 	/**
 	 * the timeout between two updates (ms)
 	 * @public
@@ -1652,7 +1651,7 @@ var dynamicPlot = function ()
 		series: {
 			shadowSize: 0,
 			lines: {show: true},
-			//points: {show: true} bad-looking
+			points: {show: true} // bad-looking
 		},
 		crosshair: {mode: "x"},
 		zoom: {interactive: true},
@@ -1677,7 +1676,7 @@ var dynamicPlot = function ()
 		}
 	};
 	this.safe_range_array = new Array();
-	var dataset = new Object(), plot, robot_name = new Array(), hover_pos, updateLegendTimeout;
+	var dataset = new Object(), plot, robot_name = new Array(), label_name = new Array(), hover_pos, updateLegendTimeout;
 	var self = this;
 	var updateLegend = function ()
 	{
@@ -1687,8 +1686,10 @@ var dynamicPlot = function ()
 		var ans, i = 0;
 		for (var key in dataset)
 		{
-			if ("frame" == key)
+			if (("parameter" == self.label && ("frame" == key || "x" == key || "y" == key || "state" == key || "substate" == key)) || ("all" != self.label && "parameter" != self.label && self.label != key))
+			{
 				continue;
+			}
 			var series = dataset[key];
 			// Find the nearest points in x-wise
 			for (var j = 0; j < series.data.length; ++ j)
@@ -1711,7 +1712,28 @@ var dynamicPlot = function ()
 					break;
 				}
 			}
-			$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+			if ("state" != key && "substate" != key)
+			{
+				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+			}
+			else if ("state" == key)
+			{
+				ans = Math.round(ans);
+				if (ans >= STATE.length)
+				{
+					ans = 0;
+				}
+				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + STATE[ans]));
+			}
+			else if ("substate" == key)
+			{
+				ans = Math.round(ans);
+				if (ans >= SUBSTATE.length)
+				{
+					ans = 0;
+				}
+				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + SUBSTATE[ans]));
+			}
 		}
 	}
 	var initData = function ()
@@ -1724,7 +1746,25 @@ var dynamicPlot = function ()
 		{
 			for (i in dataset)
 			{
-				if ("frame" == i)
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
+					{
+						dataset[i].threshold.below = self.safe_range_array[j].min;
+						break;
+					}
+				}
+				data.push( dataset[i] );
+			}
+		}
+		else if ("parameter" == self.label)
+		{
+			for (i in dataset)
+			{
+				if ("frame" == i || "x" == i || "y" == i || "state" == i || "substate" == i)
 				{
 					continue;
 				}
@@ -1764,7 +1804,7 @@ var dynamicPlot = function ()
 			++ cnt;
 			if (! (i in dataset))
 			{
-				dataset[i] = {label: i + " = 0.00", data: [], yaxis: cnt, threshold: {color: "black"}};
+				dataset[i] = {label: i + " = 0.00", data: [], yaxis: cnt + 1, threshold: {color: "black"}};
 			}
 			var tmp = new Array();
 			for (j in dataset[i].data)
@@ -1789,14 +1829,14 @@ var dynamicPlot = function ()
 			}
 			tmp.push(y);
 			// add the number to the corresponding label
-			var lis = document.getElementById(self.canvas).getElementsByTagName("li");
+			/*var lis = document.getElementById(self.canvas).getElementsByTagName("li");
 			for (var j = 0; j < lis.length; ++ j)
 			{
 				if (lis[j].innerText.length >= dataset[i].label.length && lis[j].innerText.substr(0, dataset[i].label.length) == dataset[i].label)
 				{
 					lis[j].innerHTML = dataset[i].label + ": " + y.toFixed(2);
 				}
-			}
+			}*/
 			// zip the generated y values with the x values
 			var res = new Array();
 			for (var j = 0; j < tmp.length; ++ j)
@@ -1825,13 +1865,42 @@ var dynamicPlot = function ()
 			}
 		}
 		getData();
+		if (self.show_select)
+		{
+			for (var i in dataset)
+			{
+				if (label_name.indexOf(i) == -1)
+				{
+					label_name.push(i);
+					document.getElementById(self.canvas).getElementsByTagName("select")[1].innerHTML += '<option value="' + i + '">' + i + '</option>';
+				}
+			}
+		}
 		// generate data according to the format of Flot based on self.label
 		var data = new Array();
 		if ("all" == self.label)
 		{
 			for (i in dataset)
 			{
-				if ("frame" == i)
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
+					{
+						dataset[i].threshold.below = self.safe_range_array[j].min;
+						break;
+					}
+				}
+				data.push( dataset[i] );
+			}
+		}
+		else if ("parameter" == self.label)
+		{
+			for (i in dataset)
+			{
+				if ("frame" == i || "x" == i || "y" == i || "state" == i || "substate" == i)
 				{
 					continue;
 				}
@@ -1866,37 +1935,20 @@ var dynamicPlot = function ()
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + self.border + '" style="width:' + self.table_width + ';height:' + self.table_height + ';">' +
-				'<tr>' +
-					'<td><div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div></td>' +
-					'<td width="' + self.text_width + '" align="center">' +
+					'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
+					'<form align="' + self.align + '">' +
 						'<button type="button" name="clear">clear</button>';
 		if (self.show_select)
 		{
-			html += 	'<form align="' + self.align + '">' +
-							'<select name="robot">' +
-								'<option value="" selected="selected">select:</option>' +
-							'</select>' +
-							//@todo add corresponding labels
-							'<select name="label">' +
-								'<option value="all" selected="selected">all</option>' +
-								'<option value="x">x</option>' +
-								'<option value="y">y</option>' +
-								'<option value="voltage">voltage</option>' +
-								'<option value="current">current</option>' +
-							'</select>' +
-						'</form>';
+			html += 	'<select name="robot">' +
+							'<option value="" selected="selected">select:</option>' +
+						'</select>' +
+						'<select name="label">' +
+							'<option value="all" selected="selected">all</option>' +
+							'<option value="parameter">parameter</option>' +
+						'</select>';
 		}
-		html +=			'<ul style="list-style-type:none;">' +
-							//@todo add corresponding labels
-							'<li>x:</li>' +
-							'<li>y:</li>' +
-							'<li>voltage:</li>' +
-							'<li>current:</li>' +
-						'<ul>' +
-					'</td>' +
-				'</tr>' +
-			'</table>';
+		html +=		'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
 		// add callback to clear button
 		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
@@ -2240,14 +2292,58 @@ var trajGmap = function ()
 		});
 		infownd.open(map);
 	}
+	var getColor = function (robotname)
+	{
+		var color;
+		switch (parseInt(self.robot_data.getData(robotname, "state")))
+		{
+		case 1:
+			color = "blue";
+			break;
+		case 2:
+			color = "red";
+			break;
+		case 3:
+			color = "green";
+			break;
+		case 4:
+			color = "yellow";
+			break;
+		case 5:
+			color = "cyan";
+			break;
+		case 6:
+			color = "grey";
+			break;
+		case 7:
+			color = "orchid";
+			break;
+		case 8:
+			color = "pink";
+			break;
+		case 9:
+			color = "tan";
+			break;
+		case 10:
+			color = "brown";
+			break;
+		case 11:
+			color = "white";
+			break;
+		default:
+			color = "black";
+			break;
+		}
+		return color;
+	}
 	/**
 	 * get the icon representing substate
 	 * @private
 	 */
-	var getIcon = function ()
+	var getIcon = function (robotname)
 	{
 		var icon = new Array();
-		switch (Math.round(Math.random() * 6))
+		switch (parseInt(self.robot_data.getData(robotname, "substate")))
 		{
 		case 0:
 			icon = [];
@@ -2298,6 +2394,7 @@ var trajGmap = function ()
 			}];
 			break;
 		default:
+			break;
 		}
 		return icon;
 	}
@@ -2338,9 +2435,9 @@ var trajGmap = function ()
 				// select if it is colorful
 				if (view_type == "colorful")
 				{
-					color = "#" + Math.floor(Math.random()*16777215).toString(16);
-					weight = 4;
-					icon = getIcon();
+					color = getColor(i); //"#" + Math.floor(Math.random()*16777215).toString(16);
+					weight = 2;
+					icon = getIcon(i);
 
 				} else
 				{
