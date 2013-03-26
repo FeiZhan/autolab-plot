@@ -176,9 +176,10 @@ function backup($key, $data)
 {
 	global $bak_client;
 	$old = $bak_client->lrange($key."-bak", -1, -1);
+	$time = round(microtime(true) * 1000);
 	// if change - with _, it does not work.
-	$bak_client->zadd($key."-sorted", time(), "time ".time()." ".$data);
-	$bak_client->rpushx($key."-bak", "time ".time()." ".$data);
+	$bak_client->zadd($key."-sorted", $time, "time ".$time." ".$data);
+	$bak_client->rpush($key."-bak", "time ".$time." ".$data);
 }
 // get robot data
 function getRobotData()
@@ -199,8 +200,8 @@ function random_value()
 }
 function random_robot()
 {
-	$x = rand(0, 10000) / 100;
-	$y = rand(0, 10000) / 100;
+	$x = rand(0, 100 * 830) / 100;
+	$y = rand(0, 100 * 340) / 100;
 	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100);
 }
 // generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.

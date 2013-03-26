@@ -115,7 +115,7 @@ var phpComm = function ()
 				}
 				// obtain receiving data
 				self.receive = xmlhttp.responseText;
-				document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
+				//document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
 			}
 		}
 		// if the server is assigned, send the host and port to PHP
@@ -140,7 +140,7 @@ var phpComm = function ()
 			self.cmd = self.cmd.substr(1);
 		}
 		xmlhttp.open("GET", self.file + ".php?" + self.cmd, true);
-		document.getElementById(self.send_text).innerHTML = "send: " + self.file + ".php?" + self.cmd;
+		//document.getElementById(self.send_text).innerHTML = "send: " + self.file + ".php?" + self.cmd;
 		xmlhttp.send();
 		// record the sending time
 		send_time.push(new Date().getTime());
@@ -395,8 +395,8 @@ var labLogo = function ()
 		if (self.subheading)
 		{
 			html += 
-				'<table border="1" align="' + self.align + '" width="' + self.width + '">' +
-					'<tr align="' + self.align + '">' +
+				'<table class="table table-striped" border="1" align="' + self.align + '" width="' + self.width + '">' +
+					'<tr class="info" align="' + self.align + '">' +
 						//@todo change the following links into suitable ones.
 						'<td><a href="./index.html">index</a></td>' +
 						'<td><a href="./debugger.html">debugger</a></td>' +
@@ -468,46 +468,30 @@ var redisServer = function ()
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + self.border + '" align="' + self.align + '">';
-		if (self.horizontal)
-		{
-			html +=
-				'<tr align="' + self.align + '">' +
-					'<form>' +
-						'<td>host<input type="text" name="host" value="' + self.host + '" /></td>' +
-						'<td>port<input type="text" name="port" value="' + self.port + '" /></td>' +
-						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + self.rate + '" /></td>' +
-						'<td><input type="button" value="submit" /></td>' +
-					'</form>' +
-				'</tr>';
-		} else
-		{
-			html +=
-				'<form>' +
-					'<tr align="' + self.align + '">' +
-						'<td>host<input type="text" name="host" value="' + self.host + '" /></td>' +
-					'</tr>' +
-					'<tr align="' + self.align + '">' +
-						'<td>port<input type="text" name="port" value="' + self.port + '" /></td>' +
-					'</tr>' +
-					'<tr align="' + self.align + '">' +
-						'<td>frame rate(ms^{-1})<input type="text" name="rate" value="' + self.rate + '" /></td>' +
-					'</tr>' +
-					'<tr align="' + self.align + '">' +
-						'<td><input type="button" value="submit" /></td>' +
-					'</tr>' +
+				'<form class="form-horizontal" align="' + self.align + '" style="background-color:AliceBlue;">' +
+					'<div class="control-group input-prepend input-append">' +
+						'<span class="add-on">host</span>' +
+						'<input class="span2" type="text" name="host" value="' + self.host + '" />' +
+					'</div><div class="control-group input-prepend input-append">' +
+						'<span class="add-on">port</span>' +
+						'<input class="span2" type="text" name="port" value="' + self.port + '" />' +
+					//'</div><div class="control-group input-prepend input-append">' +
+						//'<span class="add-on">rate</span>' +
+						//'<input class="span2" type="text" name="rate" value="' + self.rate + '" />' +
+					'</div><div class="control-group">' +
+						'<input class="btn btn-primary" type="button" value="submit" />' +
+					'</div>' +
 				'</form>';
-		}
-		html += '</table>';
 		document.getElementById(self.canvas).innerHTML = html;
 		/**
 		 * assign callback function to submit button
 		 */
-		document.getElementById(self.canvas).getElementsByTagName("input")[3].onclick = function ()
+		var input_list = document.getElementById(self.canvas).getElementsByTagName("input");
+		input_list[input_list.length - 1].onclick = function ()
 		{
 			self.host = this.form.host.value;
 			self.port = this.form.port.value;
-			self.rate = this.form.rate.value;
+			//self.rate = this.form.rate.value;
 		}
 	}
 }
@@ -547,7 +531,7 @@ var serverStatus = function ()
 	 * the fixed number of status elements
 	 * @public
 	 */
-	this.fix_count = 10;
+	this.fix_count = 20;
 	/**
 	 * create a php communication
 	 * @public
@@ -635,12 +619,12 @@ var serverStatus = function ()
 	 */
 	this.show = function ()
 	{
-		var html = '<table border="' + self.border + '" width="' + self.width + '" align="' + self.align + '">';
+		var html = '<table class="table table-condensed" width="' + self.width + '" align="' + self.align + '" style="background-color:AliceBlue;">';
 		for (var i = 0; i < self.fix_count; ++ i)
 		{
 			html += '<tr align="' + self.align + '">' +
-						'<td><p></p></td>' +
-						'<td><p></p></td>' +
+						'<td><p class="text-center"></p></td>' +
+						'<td><p class="text-center"></p></td>' +
 					'</tr>';
 		}
 		html += '</table>';
@@ -675,7 +659,7 @@ var keySetter = function ()
 	 * initial keys
 	 * @public
 	 */
-	this.init_key = ["cb18", "cb01", "last_time", "last_time_frame"];
+	this.init_key = ["test01", "test02", "last_time", "last_time_frame"];
 	/**
 	 * initial values
 	 * @public
@@ -938,8 +922,9 @@ var staticPlot = function ()
 	 * @public
 	 */
 	this.safe_range_array = new Array();
-	this.threshold = {below: 2, color: "black"};
-	this.robot = "cb18";
+	this.threshold = {below: 2, above: 7, color: "black"};
+	this.robot = "test01";
+	this.label = "";
 	/**
 	 * options for the plot
 	 * @public
@@ -1001,6 +986,7 @@ var staticPlot = function ()
 				for (var i = 2; i + 1 < tmp2.length; i += 2)
 				{
 					dataset.push({label: tmp2[i] + " = 0.00", data: new Array(), yaxis: i/2, threshold: {color: self.threshold.color} });
+					var flag = false;
 					// if have corresponding safe-range
 					for (var j in self.safe_range_array)
 					{
@@ -1009,8 +995,16 @@ var staticPlot = function ()
 						if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == tmp2[i])
 						{
 							dataset[dataset.length - 1].threshold.below = self.safe_range_array[j].min;
+							dataset[dataset.length - 1].threshold.above = self.safe_range_array[j].max;
+document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length - 1].threshold.below + " " + dataset[dataset.length - 1].threshold.above + " " + dataset[dataset.length - 1].threshold.color;
+							flag = true;
 							break;
 						}
+					}
+					if (false == flag)
+					{
+						dataset[dataset.length - 1].threshold.below = undefined;
+						dataset[dataset.length - 1].threshold.above = undefined;
 					}
 				}
 				for (var i in tmp)
@@ -1019,7 +1013,7 @@ var staticPlot = function ()
 						break;
 					tmp2 = tmp[i].split(" ");
 					var len = Math.min(dataset.length + 2, tmp2.length / 2);
-					var time = parseFloat(tmp2[1]) * 1000 - 1000 * 60 * 60 * 7;
+					var time = parseFloat(tmp2[1]) - 1000 * 60 * 60 * 7;
 					for (var j = 1; j < len; ++ j)
 					{
 						var tmp3 = parseFloat(tmp2[j * 2 + 1]);
@@ -1081,23 +1075,31 @@ var staticPlot = function ()
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
-			'<form align="' + self.align + '">' +
-				'<button type="button" name="clear">clear</button>' +
-				//'<button type="button" name="zoom">zoom</button>' +
-				' key<input type="text" name="key" value="' + self.key + '" />' +
-				'<input type="button" value="submit" />' +
-				' backup data: robot<input type="text" name="robot" value="' + self.robot + '" />' +
-				'<input type="button" value="submit" />' +
-			'</form>' +
-			'<form align="' + self.align + '">' +
-				'robot<input type="text" name="robot" value="' + self.robot + '" />' +
-				'label<input type="text" name="label" value="' + self.label + '" />' +
-				'start<input type="text" name="dtpicker" id="sp_dtpicker1" value="" />' +
-				'end<input type="text" name="dtpicker" id="sp_dtpicker2" value="" />' +
-				'duration (s)<input type="text" name="duration" value="" />' +
-				'<input type="button" value="submit" />' +
-			'</form>';
+			'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';background-color:AliceBlue;"></div>' +
+			'<div class="input-append">' +
+				'<form align="' + self.align + '">' +
+					'<button class="btn btn-primary" type="button" name="clear" class="btn">clear</button>' +
+					'<span class="add-on">key</span>' +
+					'<input class="span2" type="text" name="key" value="' + self.key + '" />' +
+					'<input class="btn btn-primary" type="button" value="submit" class="btn" />' +
+					'<span class="add-on">previous data of robot</span>' +
+					'<input class="span2" type="text" name="robot" value="' + self.robot + '" />' +
+					'<input class="btn btn-primary" type="button" value="submit" class="btn" />' +
+				'</form>' +
+				'<form align="' + self.align + '">' +
+					'<span class="add-on">historical data: robot</span>' +
+					'<input class="span2" type="text" name="robot" value="' + self.robot + '" />' +
+					'<span class="add-on">label</span>' +
+					'<input class="span2" type="text" name="label" value="' + self.label + '" />' +
+					'<span class="add-on">start</span>' +
+					'<input class="span2" type="text" name="dtpicker" id="sp_dtpicker1" value="" />' +
+					'<span class="add-on">end</span>' +
+					'<input class="span2" type="text" name="dtpicker" id="sp_dtpicker2" value="" />' +
+					'<span class="add-on">duration (s)</span>' +
+					'<input class="span2" type="text" name="duration" value="" />' +
+					'<input class="btn btn-primary" type="button" value="submit" class="btn" />' +
+				'</form>' +
+			'</div>';
 		document.getElementById(self.canvas).innerHTML = html;
 		$('#sp_dtpicker1').datetimepicker({
 			showSecond: true,
@@ -1240,8 +1242,12 @@ var timeTravel = function ()
 	 */
 	this.show = function ()
 	{
-		var html = 	'<input type="text" name="dtpicker" id="dtpicker" value="" />' +
-					'<button type="button" name="submit" >start time travelling</button><span></span>';
+		var html =
+					'<div class="input-prepend input-append" align="' + self.align + '" style="background-color:AliceBlue;">' +
+						'<input class="span2" type="text" name="dtpicker" id="dtpicker" value="" />' +
+						'<button class="btn btn-primary" type="button" name="submit" >start time travelling</button>' +
+						'<span class="add-on"></span>' +
+					'</div>';
 		document.getElementById(self.canvas).innerHTML = html;
 		document.getElementById(self.canvas).getElementsByTagName("button")[0].onclick = function ()
 		{
@@ -1425,11 +1431,11 @@ var trajPlot2 = function ()
 	/**
 	 * @public
 	 */
-	this.width = "830px";
+	this.width = 830;
 	/**
 	 * @public
 	 */
-	this.height = "340px";
+	this.height = 340;
 	/**
 	 * @public
 	 */
@@ -1474,8 +1480,8 @@ var trajPlot2 = function ()
 			var y = pos0;
 			if (y < 0)
 				y = 0;
-			if (y > self.max)
-				y = self.max;
+			if (y > self.width)
+				y = self.width;
 			data.push(y);
 		}
 		if (data2.length > 0)
@@ -1485,8 +1491,8 @@ var trajPlot2 = function ()
 			var y = pos1;
 			if (y < 0)
 				y = 0;
-			if (y > self.max)
-				y = self.max;
+			if (y > self.height)
+				y = self.height;
 			data2.push(y);
 		}
 	}
@@ -1498,27 +1504,27 @@ var trajPlot2 = function ()
 	{
 		// draw the static graphics by jsDraw2DX
 		gr = new jxGraphics(document.getElementById(self.placeholder));
-		var boundary = new jxRect(new jxPoint(0,0), 830, 340, new jxPen(new jxColor("grey"),'1px'));
+		var boundary = new jxRect(new jxPoint(0,0), self.width, self.height, new jxPen(new jxColor("grey"),'1px'));
 		boundary.draw(gr);
-		var grid = new jxRect(new jxPoint(330, 480), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
-		grid.draw(gr);
+		var grid = new jxRect(new jxPoint(330, 200), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
+		//grid.draw(gr);
 		var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
 		home.draw(gr);
-		var patch1 = new jxCircle(new jxPoint(570, 570), 20, new jxPen(new jxColor("green"),'1px'));
+		var patch1 = new jxCircle(new jxPoint(self.width - 30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
-		var patch1 = new jxCircle(new jxPoint(30, 570), 20, new jxPen(new jxColor("green"),'1px'));
+		var patch1 = new jxCircle(new jxPoint(30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
 
 		// draw the initial graphics of dynamic objects
 		getData(0, 0);
-		var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
+		var pos = new jxPoint(data[data.length - 1], self.width - data2[data.length - 1]);
 		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 		body.draw(gr);
-		test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
-		test1.draw(gr);
+		//test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
+		//test1.draw(gr);
 		for (var i = 0; i < data.length - 1; ++i)
 		{
-			line.push( new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px')) );
+			line.push( new jxLine(new jxPoint(data[i], self.height - data2[i]), new jxPoint(data[i+1], self.height - data2[i+1]), new jxPen(new jxColor("pink"),'1px')) );
 			line[i].draw(gr);
 		}
 	}
@@ -1528,18 +1534,18 @@ var trajPlot2 = function ()
 	 */
 	var update = function ()
 	{
-		getData(self.robot_data.getData("cb01", "x"), self.robot_data.getData("cb01", "y"));
-		var pos = new jxPoint(data2[data.length - 1] * 6, 600 - data[data.length - 1] * 6);
+		getData(self.robot_data.getData("test02", "x"), self.robot_data.getData("test02", "y"));
+		var pos = new jxPoint(data[data.length - 1], self.height - data2[data.length - 1]);
 		body.remove();
 		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 		body.draw(gr);
-		test1.remove();
-		test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
-		test1.draw(gr);
+		//test1.remove();
+		//test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
+		//test1.draw(gr);
 		for (var i = 0; i < data.length - 1; ++i)
 		{
 			line[i].remove();
-			line[i] = new jxLine(new jxPoint(data2[i] * 6, 600 - data[i] * 6), new jxPoint(data2[i+1] * 6, 600 - data[i+1] * 6), new jxPen(new jxColor("pink"),'1px'));
+			line[i] = new jxLine(new jxPoint(data[i], self.height - data2[i]), new jxPoint(data[i+1], self.height - data2[i+1]), new jxPen(new jxColor("pink"),'1px'));
 			line[i].draw(gr);
 		}
 		setTimeout(update, self.timeout);
@@ -1551,7 +1557,7 @@ var trajPlot2 = function ()
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + self.placeholder + '" style="overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + ';height:' + self.height + ';align:' + self.align + ';"></div>';
+			'<div id="' + self.placeholder + '" style="background-color:#fff;overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + 'px;height:' + self.height + 'px;align:' + self.align + ';"></div>';
 		document.getElementById(self.canvas).innerHTML = html;
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
@@ -1676,65 +1682,81 @@ var dynamicPlot = function ()
 		}
 	};
 	this.safe_range_array = new Array();
-	var dataset = new Object(), plot, robot_name = new Array(), label_name = new Array(), hover_pos, updateLegendTimeout;
+	var dataset = new Object(), plot, robot_name = new Array(), label_name = new Array(), hover_pos;
 	var self = this;
 	var updateLegend = function ()
 	{
 		updateLegendTimeout = null;
-		var pos = hover_pos;
-		var axes = plot.getAxes();
-		var ans, i = 0;
-		for (var key in dataset)
+		if (hover_pos)
 		{
-			if (("parameter" == self.label && ("frame" == key || "x" == key || "y" == key || "state" == key || "substate" == key)) || ("all" != self.label && "parameter" != self.label && self.label != key))
+			var pos = hover_pos;
+			var axes = plot.getAxes();
+			var ans, i = 0;
+			for (var key in dataset)
 			{
-				continue;
-			}
-			var series = dataset[key];
-			// Find the nearest points in x-wise
-			for (var j = 0; j < series.data.length; ++ j)
-			{
-				if (series.data[j][0] > pos.x)
+				if (("parameter" == self.label && ("frame" == key || "x" == key || "y" == key || "state" == key || "substate" == key)) || ("all" != self.label && "parameter" != self.label && self.label != key))
 				{
-					// Interpolate
-					var p1 = series.data[j - 1], p2 = series.data[j];
-					if (p1 == null)
+					continue;
+				}
+				var series = dataset[key];
+				if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
+				{
+					ans = series.data[series.data.length - 1][1];
+				} else
+				{
+					var flag = false;
+					// Find the nearest points in x-wise
+					for (var j = 0; j < series.data.length; ++ j)
 					{
-						ans = p2[1];
-					} else if (p2 == null)
-					{
-						ans = p1[1];
-					} else
-					{
-						// it is originally string
-						ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+						if (series.data[j][0] > pos.x)
+						{
+							// Interpolate
+							var p1 = series.data[j - 1], p2 = series.data[j];
+							if (p1 == null)
+							{
+								ans = p2[1];
+							} else if (p2 == null)
+							{
+								ans = p1[1];
+							} else
+							{
+								// it is originally string
+								ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+							}
+							flag = true;
+							break;
+						}
 					}
-					break;
+					if (false == flag)
+					{
+						ans = 0;
+					}
 				}
-			}
-			if ("state" != key && "substate" != key)
-			{
-				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
-			}
-			else if ("state" == key)
-			{
-				ans = Math.round(ans);
-				if (ans >= STATE.length)
+				if ("state" != key && "substate" != key)
 				{
-					ans = 0;
+					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
 				}
-				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + STATE[ans]));
-			}
-			else if ("substate" == key)
-			{
-				ans = Math.round(ans);
-				if (ans >= SUBSTATE.length)
+				else if ("state" == key)
 				{
-					ans = 0;
+					ans = Math.round(ans);
+					if (ans >= STATE.length)
+					{
+						ans = 0;
+					}
+					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + STATE[ans]));
 				}
-				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + SUBSTATE[ans]));
+				else if ("substate" == key)
+				{
+					ans = Math.round(ans);
+					if (ans >= SUBSTATE.length)
+					{
+						ans = 0;
+					}
+					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + SUBSTATE[ans]));
+				}
 			}
 		}
+		setTimeout(updateLegend, 50);
 	}
 	var initData = function ()
 	{
@@ -1746,6 +1768,7 @@ var dynamicPlot = function ()
 		{
 			for (i in dataset)
 			{
+				var flag = false;
 				// if have corresponding safe-range
 				for (var j in self.safe_range_array)
 				{
@@ -1753,9 +1776,16 @@ var dynamicPlot = function ()
 						break;
 					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
 					{
+						dataset[i].threshold.above = self.safe_range_array[j].max;
 						dataset[i].threshold.below = self.safe_range_array[j].min;
+						flag = true;
 						break;
 					}
+				}
+				if (false == flag)
+				{
+					dataset[i].threshold.above = undefined;
+					dataset[i].threshold.below = undefined;
 				}
 				data.push( dataset[i] );
 			}
@@ -1768,6 +1798,7 @@ var dynamicPlot = function ()
 				{
 					continue;
 				}
+				var flag = false;
 				// if have corresponding safe-range
 				for (var j in self.safe_range_array)
 				{
@@ -1775,9 +1806,16 @@ var dynamicPlot = function ()
 						break;
 					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
 					{
+						dataset[i].threshold.above = self.safe_range_array[j].max;
 						dataset[i].threshold.below = self.safe_range_array[j].min;
+						flag = true;
 						break;
 					}
+				}
+				if (false == flag)
+				{
+					dataset[i].threshold.above = undefined;
+					dataset[i].threshold.below = undefined;
 				}
 				data.push( dataset[i] );
 			}
@@ -1785,6 +1823,25 @@ var dynamicPlot = function ()
 		{
 			if (self.label in dataset)
 			{
+				var flag = false;
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == self.label)
+					{
+						dataset[self.label].threshold.above = self.safe_range_array[j].max;
+						dataset[self.label].threshold.below = self.safe_range_array[j].min;
+						flag = true;
+						break;
+					}
+				}
+				if (false == flag)
+				{
+					dataset[self.label].threshold.above = undefined;
+					dataset[self.label].threshold.below = undefined;
+				}
 				data.push( dataset[self.label] );
 			}
 		}
@@ -1882,6 +1939,7 @@ var dynamicPlot = function ()
 		{
 			for (i in dataset)
 			{
+				var flag = false;
 				// if have corresponding safe-range
 				for (var j in self.safe_range_array)
 				{
@@ -1889,9 +1947,16 @@ var dynamicPlot = function ()
 						break;
 					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
 					{
+						dataset[i].threshold.above = self.safe_range_array[j].max;
 						dataset[i].threshold.below = self.safe_range_array[j].min;
+						flag = true;
 						break;
 					}
+				}
+				if (false == flag)
+				{
+					dataset[i].threshold.above = undefined;
+					dataset[i].threshold.below = undefined;
 				}
 				data.push( dataset[i] );
 			}
@@ -1904,6 +1969,7 @@ var dynamicPlot = function ()
 				{
 					continue;
 				}
+				var flag = false;
 				// if have corresponding safe-range
 				for (var j in self.safe_range_array)
 				{
@@ -1911,9 +1977,16 @@ var dynamicPlot = function ()
 						break;
 					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == i)
 					{
+						dataset[i].threshold.above = self.safe_range_array[j].max;
 						dataset[i].threshold.below = self.safe_range_array[j].min;
+						flag = true;
 						break;
 					}
+				}
+				if (false == flag)
+				{
+					dataset[i].threshold.above = undefined;
+					dataset[i].threshold.below = undefined;
 				}
 				data.push( dataset[i] );
 			}
@@ -1921,6 +1994,25 @@ var dynamicPlot = function ()
 		{
 			if (self.label in dataset)
 			{
+				var flag = false;
+				// if have corresponding safe-range
+				for (var j in self.safe_range_array)
+				{
+					if (! self.safe_range_array[j].checked)
+						break;
+					if (self.safe_range_array[j].robot == self.robot && self.safe_range_array[j].label == self.label)
+					{
+						dataset[self.label].threshold.above = self.safe_range_array[j].max;
+						dataset[self.label].threshold.below = self.safe_range_array[j].min;
+						flag = true;
+						break;
+					}
+				}
+				if (false == flag)
+				{
+					dataset[self.label].threshold.above = undefined;
+					dataset[self.label].threshold.below = undefined;
+				}
 				data.push( dataset[self.label] );
 			}
 		}
@@ -1935,9 +2027,9 @@ var dynamicPlot = function ()
 	this.show = function ()
 	{
 		var html =
-					'<div id="' + self.placeholder + '" style="width:' + self.width + ';height:' + self.height + ';"></div>' +
-					'<form align="' + self.align + '">' +
-						'<button type="button" name="clear">clear</button>';
+					'<div id="' + self.placeholder + '" style="background-color:AliceBlue;width:' + self.width + ';height:' + self.height + ';"></div>' +
+					'<form class="input-prepend input-append" align="' + self.align + '">' +
+						'<button class="btn btn-primary" type="button" name="clear">clear</button>';
 		if (self.show_select)
 		{
 			html += 	'<select name="robot">' +
@@ -1986,10 +2078,8 @@ var dynamicPlot = function ()
 		$("#"+self.placeholder).bind("plothover",  function (event, pos, item)
 		{
 			hover_pos = pos;
-			if (!updateLegendTimeout) {
-				updateLegendTimeout = setTimeout(updateLegend, 50);
-			}
 		});
+		updateLegend();
 		update();
 	}
 }
@@ -2006,7 +2096,7 @@ var safeRange = function ()
 	/**
 	 * @public
 	 */
-	this.border = 1;
+	this.border = 0;
 	/**
 	 * @public
 	 */
@@ -2072,7 +2162,8 @@ var safeRange = function ()
 			{
 				sound_timeout = new Date().getTime();
 				//$.playSound("jquery-play-sound/alarma.wav");
-				document.getElementById(self.canvas).getElementsByTagName("span")[0].innerHTML = '<embed src="jquery-play-sound/ALARM.WAV" height="0%" width="0%" hidden="true" autostart="true" loop="false" />';
+				var span_list = document.getElementById(self.canvas).getElementsByTagName("span")
+				span_list[span_list.length - 1].innerHTML = '<embed src="jquery-play-sound/ALARM.WAV" height="0%" width="0%" hidden="true" autostart="true" loop="false" />';
 			}
 		} else
 		{
@@ -2107,26 +2198,39 @@ var safeRange = function ()
 			l = "";
 		}
 		var html =
-			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '">' +
+			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '" style="background-color:AliceBlue;">' +
 				'<tr align="' + self.align + '">' +
 					'<td>' +
-						'<form name="source">' +
-						'safe-range<input type="checkbox" name="work">' +
-						'robot<input type="text" name="robot" value="' + r + '">' +
-						'label<input type="text" name="label" value="' + l + '">' +
-						'<input type="button" value="submit">' +
+						'<form name="source" class="input-prepend input-append">' +
+							'<span class="add-on">safe-range</span>' +
+							'<label class="checkbox inline">' +
+								'<input type="checkbox" name="work">' +
+							'</label>' +
+							'<span class="add-on">robot</span>' +
+							'<input class="span2" type="text" name="robot" value="' + r + '">' +
+							'<span class="add-on">label</span>' +
+							'<input class="span2" type="text" name="label" value="' + l + '">' +
+							'<input class="btn btn-primary" type="button" value="submit">' +
 						'</form>' +
 					'</td>' +
 					'<td>' +
-						'<form name="safe_range">' +
-						'min<input type="text" name="min" value="' + self.min + '">' +
-						'max<input type="text" name="max" value="' + self.max + '">' +
-						'<input type="button" value="submit">' +
+						'<form name="safe_range" class="input-prepend input-append">' +
+							'<span class="add-on">min</span>' +
+							'<input class="span2" type="text" name="min" value="' + self.min + '">' +
+							'<span class="add-on">max</span>' +
+							'<input class="span2" type="text" name="max" value="' + self.max + '">' +
+							'<input class="btn btn-primary" type="button" value="submit">' +
 						'</form>' +
 					'</td>' +
-					'<td width="5%"><p></p></td>' +
 					'<td width="5%">' +
-						'<p>' + self.safe_text + '</p>' +
+						'<form name="safe_range" class="input-prepend input-append">' +
+							'<span class="add-on"><p></p></span>' +
+						'</form>' +
+					'</td>' +
+					'<td width="10%">' +
+						'<form name="safe_range" class="input-prepend input-append">' +
+							'<span class="add-on"><p>' + self.safe_text + '</p></span>' +
+						'</form>' +
 					'</td>' +
 					'<td width="0%" height="0%">' +
 						'<span><embed width="0%" height="0%" hidden="true" /></span>' +
@@ -2560,28 +2664,22 @@ var trajGmap = function ()
 	this.show = function ()
 	{
 		var html =
-			'<table border="' + self.border + '" align="' + self.align + '" width="' + self.width + '" >' +
-				'<tr>' +
-					'<td>' +
-						'<form align="' + self.align + '">' +
-							'view<select name="view">' +
+					'<form align="' + self.align + '">' +
+						'<div class="input-prepend input-append" align="' + self.align + '">' +
+							'<span class="add-on">view</span>' +
+							'<select name="view">' +
 								'<option value="basic" selected="selected">basic</option>' +
 								'<option value="energy">energy map</option>' +
 								'<option value="time">time map</option>' +
 								'<option value="colorful">colorful trajectory</option>' +
 							'</select>' +
-						'</form>' +
-					'</td>' +
-					'<td>' +
-						'<form align="' + self.align + '">' +
-							'follow <select name="follow">' +
+							'<span class="add-on">follow</span>' +
+							'<select name="follow">' +
 								'<option value="none" selected="selected">none</option>' +
 								'<option value="lab">lab</option>' +
 							'</select>' +
-						'</form>' +
-					'</td>' +
-				'</tr>' +
-			'</table>';
+						'</div>' +
+					'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
 		var select = document.getElementById(self.canvas).getElementsByTagName("select");
 		// add callback to view select

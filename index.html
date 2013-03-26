@@ -4,6 +4,7 @@
 		<title>Demonstration for Autolab</title>
 		<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.10.0/themes/smoothness/jquery-ui.css" />
 		<link rel="stylesheet" media="all" type="text/css" href="./jquery-ui/jquery-ui-timepicker-addon.css" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
 		<script type="text/javascript" src="./jquery-ui/jquery-1.9.1.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.js"></script>
@@ -44,22 +45,26 @@ google.maps.event.addDomListener(window, 'load', function ()
 });
 		</script>
 	</head>
-	<body background="">
+	<body style="background-color:AliceBlue;">
+		<script src="js/bootstrap.min.js"></script>
 		<div id="labLogo"></div>
 			<div style="align:center;height:35%;width:50%;float:left;">
 				<div id="map_canvas" style="height:100%;width:100%;"></div>
 				<div id="trajGmap"></div>
 			</div>
 			<div id="trajPlot2" align="center"></div>
-		<br />
+		<br /><br />
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
 				<td width="85%" align="center" valign="top">
 					<div id="robotName"></div>
 					<div id="dynamicPlot"></div>
 					<div id="safeRange"></div>
+					<div id="safeRange2"></div>
+					<div id="safeRange3"></div>
 					<br />
 					<div id="staticPlot"></div>
+					<div id="safeRangeb"></div>
 					<br />
 					<div id="timeTravel"></div>
 				</td>
@@ -77,7 +82,7 @@ var ll = new labLogo();
 ll.show();
 
 var rs = new redisServer();
-rs.horizontal = false;
+//rs.horizontal = false;
 rs.show();
 
 tg.show();
@@ -92,16 +97,37 @@ tc.show();
 var tp2 = new trajPlot2();
 tp2.show();
 
-var dp = new dynamicPlot();
-dp.show();
-
-var sp = new staticPlot();
-sp.show();
-
 var sr = new safeRange();
+sr.width = "70%"
 sr.show();
 
+var sr2 = new safeRange();
+sr2.width = "70%"
+sr2.canvas = "safeRange2";
+sr2.show();
+
+var sr3 = new safeRange();
+sr3.width = "70%"
+sr3.canvas = "safeRange3";
+sr3.show();
+
+var dp = new dynamicPlot();
+dp.safe_range_array[0] = sr;
+dp.safe_range_array[1] = sr2;
+dp.safe_range_array[2] = sr3;
+dp.show();
+
+var srb = new safeRange();
+srb.width = "70%"
+srb.canvas = "safeRangeb";
+srb.show();
+
+var sp = new staticPlot();
+sp.safe_range_array[0] = srb;
+sp.show();
+
 var ss = new serverStatus();
+ss.php_comm.server = rs;
 ss.show();
 		</script>
 	</body>
