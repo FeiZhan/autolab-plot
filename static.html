@@ -1,78 +1,47 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html>
 <html>
 	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Static Plots for Autolab Demonstration</title>
-		<!--<link href="layout.css" rel="stylesheet" type="text/css">-->
-		<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
-		<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
+		<title>Static Plots for Autolab</title>
+		<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.10.0/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" media="all" type="text/css" href="./jquery-ui/jquery-ui-timepicker-addon.css" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+		<script type="text/javascript" src="./jquery-ui/jquery-1.9.1.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.selection.js"></script>
 		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
-		<script src="parameter.js"></script>
-		<script type="text/javascript" >
-// by fzhan@Autolab
-// a static plot for a key from Redis
-var plot, key, last_ret = "";
-// get the value from Redis
-function send_key(form)
-{
-	key = form.key.value;
-	if (key != undefined && key != "")
-	{
-		connect_redis("call_method", "method=get_key&key=" + key);
-	}
-}
-$(function()
-{
-	var option = {
-		series: {
-			lines: {show: true},
-			points: {show: true}
-		},
-		crosshair: {mode: "x"},
-		grid: {
-			show: true,
-			hoverable: true,
-			autoHighlight: false
-		}};
-	plot = $.plot("#placeholder", [[]], option);
-	// update the plot periodically in order to plot the data from Redis
-	function update()
-	{
-		if (SERVER_RET != last_ret)
-		{
-			// we have new data from Redis
-			last_ret = SERVER_RET;
-			var tmp = SERVER_RET.split(" "), data = new Array();
-			for (var i = 0; i < tmp.length; ++ i)
-			{
-				var tmp2 = parseFloat(tmp[i]);
-				if (tmp2 == undefined || isNaN(tmp2))
-				{
-					continue;
-				}
-				data.push([i, tmp2]);
-			}
-			$.plot("#placeholder", [data], option);
-		}
-		setTimeout(update, 300);
-	}
-	update();
-});
-		</script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-timepicker-addon.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-sliderAccess.js"></script>
+		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
+		<script type="text/JavaScript" src="jquery-play-sound/jquery.playSound.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<meta charset="utf-8">
+		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+		<script src="plot_methods.js"></script>
 	</head>
-	<body>
-		<table border="0" width="100%" align="center">
-			<tr>
-				<td width="30"><img src="logo.png" alt="logo"></td>
-				<td><h1 align='center'>Static Plots for Autolab Demonstration</h1></td>
-			</tr>
-		</table>
-		<div id="placeholder" style="width:100%;height:300px;"></div>
-		<div align="center"><form>
-			key:<input type="text" name="key" value="" />
-			<input type="button" value="submit" onClick="send_key(this.form)" />
-		</form></div>
+	<body style="background-color:AliceBlue;">
+		<script src="js/bootstrap.min.js"></script>
+		<div id="labLogo"></div>
+		<div id="staticPlot"></div>
+		<div id="safeRangeb"></div>
 		<p id="debug">debug: </p>
+		<p id="send">send: </p>
+		<p id="receive">receive: </p>
+		<script type="text/javascript">
+var ll = new labLogo();
+ll.show();
+
+var srb = new safeRange();
+srb.width = "70%"
+srb.canvas = "safeRangeb";
+srb.show();
+
+var sp = new staticPlot();
+sp.safe_range_array[0] = srb;
+sp.show();
+		</script>
 	</body>
 </html>

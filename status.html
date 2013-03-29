@@ -1,62 +1,46 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Status in Autolab</title>
-		<script src="parameter.js"></script>
-		<script>
-// by fzhan@Autolab
-var redis_ret, db_status = new Array();
-function change_data(raw_data)
-{
-	var data = raw_data.split(", ");
-	for (var i = 0; i < data.length; ++ i)
-	{
-		var key_value = data[i].split(" ");
-		if (key_value[0] == "")
-		{
-			continue;
-		}
-		var flag = false;
-		for (var j = 0; j < db_status.length; ++ j)
-		{
-			if (key_value[0] == db_status[j])
-			{
-				document.getElementById(key_value[0]).innerHTML = key_value[1];
-				flag = true;
-				break;
-			}
-		}
-		if (false == flag)
-		{
-			db_status.push(key_value[0]);
-			document.getElementById("table").innerHTML += 
-				'<tr align="center">' +
-					'<td><p>' + key_value[0] + '</p></td>' +
-					'<td><p id="' + key_value[0] + '"></p></td>' +
-				'</tr>';
-		}
-	}
-}
-function periodic_connect()
-{
-	connect_redis("call_method", "method=status");
-	change_data(SERVER_RET);
-	setTimeout(periodic_connect, 300);
-}
-		</script>
+		<title>Database Status for Autolab</title>
+		<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.10.0/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" media="all" type="text/css" href="./jquery-ui/jquery-ui-timepicker-addon.css" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+		<script type="text/javascript" src="./jquery-ui/jquery-1.9.1.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.selection.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-timepicker-addon.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-sliderAccess.js"></script>
+		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
+		<script type="text/JavaScript" src="jquery-play-sound/jquery.playSound.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<meta charset="utf-8">
+		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+		<script src="plot_methods.js"></script>
 	</head>
-	<body>
-		<table border="0" width="100%" align="center">
-			<tr>
-				<td width="30"><img src="logo.png" alt="logo"></td>
-				<td><h1 align='center'>Status in Autolab</h1></td>
-			</tr>
-		</table>
-		<table border="1" width="60%" align="center" id="table">
-		</table>
+	<body style="background-color:AliceBlue;">
+		<script src="js/bootstrap.min.js"></script>
+		<div id="labLogo"></div>
+		<div id="redisServer"></div>
+		<div id="serverStatus"></div>
 		<p id="debug">debug: </p>
+		<p id="send">send: </p>
+		<p id="receive">receive: </p>
 		<script type="text/javascript">
-periodic_connect();
+var ll = new labLogo();
+ll.show();
+
+var rs = new redisServer();
+//rs.horizontal = false;
+rs.show();
+
+var ss = new serverStatus();
+ss.php_comm.server = rs;
+ss.show();
 		</script>
 	</body>
 </html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Trajectory Plot 1 for Autolab</title>
+		<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.10.0/themes/smoothness/jquery-ui.css" />
+		<link rel="stylesheet" media="all" type="text/css" href="./jquery-ui/jquery-ui-timepicker-addon.css" />
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+		<script type="text/javascript" src="./jquery-ui/jquery-1.9.1.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.selection.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.crosshair.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.threshold.js"></script>
+		<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-timepicker-addon.js"></script>
+		<script type="text/javascript" src="./jquery-ui/jquery-ui-sliderAccess.js"></script>
+		<script type="text/JavaScript" src="jsDraw2DX/jsDraw2DX.js"></script>
+		<script type="text/JavaScript" src="jquery-play-sound/jquery.playSound.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<meta charset="utf-8">
+		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+		<script src="plot_methods.js"></script>
+	</head>
+	<body style="background-color:AliceBlue;">
+		<script src="js/bootstrap.min.js"></script>
+		<div id="labLogo"></div>
+		<div id="trajPlot1" align="center"></div>
+		<p id="debug">debug: </p>
+		<p id="send">send: </p>
+		<p id="receive">receive: </p>
+		<script type="text/javascript">
+var ll = new labLogo();
+ll.show();
+
+var tp1 = new trajPlot1();
+tp1.show();
+		</script>
+	</body>
+</html>

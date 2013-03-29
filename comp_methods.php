@@ -107,14 +107,14 @@ function getPreviousData()
 function historicData()
 {
 	global $bak_client;
-	$from = strtotime($_GET["from"]);
+	$from = strtotime($_GET["from"]) * 1000;
 	// if duration is not valid, use "to"
 	if ($_GET["duration"] == "" || $_GET["duration"] == " " || $_GET["duration"] == "0")
 	{
-		$to = strtotime($_GET["to"]);
+		$to = strtotime($_GET["to"]) * 1000;
 	} else
 	{
-		$to = $from + intval($_GET["duration"]);
+		$to = $from + intval($_GET["duration"]) * 1000;
 	}
 	$key = $_GET["robot"]."-sorted";
 	// get data ranging from "from" to "to"
@@ -134,21 +134,22 @@ function timeTravel()
 		return;
 	}
 	$names = returnNames();
-	$nexttime = intval($_GET["nexttime"]);
-	$next = PHP_INT_MAX;
+	$nexttime = floatval($_GET["nexttime"]) * 1000;
+	$next = pow(2, 63);
+	$timestamp = strtotime($_GET["timestamp"]) * 1000;
 	// if "nexttime" is invalid, get timestamp from "timestamp", and determine "nexttime"
 	if ($_GET["nexttime"] == "" || 0 == $nexttime)
 	{
 		foreach ($names as $i)
 		{
 			$key = $i."-sorted";
-			$tmp = $bak_client->zrangebyscore($key, strtotime($_GET["timestamp"]), "+inf");
-			$client->set($i, $tmp[0]);
+			$tmp = $bak_client->zrangebyscore($key, $timestamp, "+inf");
 			$tmp = $tmp[0];
+			$client->set($i, $tmp);
 			$index = $bak_client->zrank($key, $tmp);
 			$tmp = $bak_client->zrange($key, $index + 1, $index + 1);
 			$tmp = $bak_client->zscore($key, $tmp[0]);
-			if ($tmp < $next)
+			if ($tmp >= $timestamp && $tmp < $next)
 			{
 				$next = $tmp;
 			}
@@ -159,17 +160,18 @@ function timeTravel()
 		{
 			$key = $i."-sorted";
 			$tmp = $bak_client->zrangebyscore($key, $nexttime, $nexttime);
-			$client->set($i, $tmp[0]);
-			$index = $bak_client->zrank($key, $tmp[0]);
+			$tmp = $tmp[0];
+			$client->set($i, $tmp);
+			$index = $bak_client->zrank($key, $tmp);
 			$tmp = $bak_client->zrange($key, $index + 1, $index + 1);
 			$tmp = $bak_client->zscore($key, $tmp[0]);
-			if ($tmp < $next)
+			if ($tmp >= $timestamp && $tmp < $next)
 			{
 				$next = $tmp;
 			}
 		}
 	}
-	echo $next." ".($next - $nexttime);
+	echo ($next / 1000.0)." ".($next - $nexttime);
 }
 // backup data into backup database when get_robot_data is called
 function backup($key, $data)
@@ -178,8 +180,8 @@ function backup($key, $data)
 	$old = $bak_client->lrange($key."-bak", -1, -1);
 	$time = round(microtime(true) * 1000);
 	// if change - with _, it does not work.
-	$bak_client->zadd($key."-sorted", $time, "time ".$time." ".$data);
-	$bak_client->rpush($key."-bak", "time ".$time." ".$data);
+	$bak_client->zadd($key."-sorted", $time, "servertime ".$time." ".$data);
+	$bak_client->rpush($key."-bak", "servertime ".$time." ".$data);
 }
 // get robot data
 function getRobotData()
@@ -200,8 +202,8 @@ function random_value()
 }
 function random_robot()
 {
-	$x = rand(0, 100 * 830) / 100;
-	$y = rand(0, 100 * 340) / 100;
+	$x = rand(0, 100 * 10) / 100;
+	$y = rand(0, 100 * 8) / 100;
 	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100);
 }
 // generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.
@@ -335,7 +337,7 @@ function calEnergy()
 function calGrid()
 {
 	global $client, $LAB;
-	$names = getNames();
+	$names = returnNames();
 	// obtain old data from Redis
 	switch($_GET["type"])
 	{
@@ -370,7 +372,7 @@ function calGrid()
 	{
 		//obtain robot data from Redis
 		$r = explode(" ", $client->get($names[$i]));
-		$now = intval($r[0]);
+		$now = intval($r[1]);
 		if (count($last_frame) < count($names) || $last_frame[$i] >= $now)
 		{
 			// there is no data, or the robot did not move
@@ -378,13 +380,13 @@ function calGrid()
 			continue;
 		}
 		// get the grid position from the geo position
-		$x = round((floatval($r[1]) - $LAB[0] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
-		$y = round((floatval($r[2]) - $LAB[1] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
+		$x = round((floatval($r[3]) - $LAB[0] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
+		$y = round((floatval($r[5]) - $LAB[1] - $_GET["grid_size"]/2) / $_GET["grid_size"]);
 		// calculate the value of energy or time
 		switch($_GET["type"])
 		{
 		case "energy":
-			$value = floatval($r[3]) * floatval($r[4]) * ($now - $last_frame[$i]);
+			$value = floatval($r[7]) * floatval($r[9]) * ($now - $last_frame[$i]);
 			break;
 		case "time":
 			$value = $now - $last_frame[$i];
@@ -430,16 +432,16 @@ function calGrid()
 		}
 		// calculate the color value of the grid
 		$tmp = $i / $sum;
-		if ($tmp < 0.01)
+		if ($tmp < 0.001)
 		{
-			$color = 250;
+			$color = 230;
 		}
 		else if ($tmp > 0.1)
 		{
 			$color = 50;
 		} else
 		{
-			$color = round(250 + ($tmp - 0.01) / (0.1 - 0.01) * (50 - 250));
+			$color = round(230 + ($tmp - 0.001) / (0.1 - 0.001) * (50 - 230));
 		}
 		//[todo] if the color does not change, we do not need to transmit it
 		if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
