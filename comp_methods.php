@@ -202,8 +202,9 @@ function random_value()
 }
 function random_robot()
 {
-	$x = rand(0, 100 * 10) / 100;
-	$y = rand(0, 100 * 8) / 100;
+	// the ground is 10 * 8
+	$x = rand(-5 * 100, 100 * 5) / 100;
+	$y = rand(-4 * 100, 100 * 4) / 100;
 	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." elect ".(rand(0, 1) ? "ELECTED" : "NOELECTED");
 }
 // generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.

@@ -57,6 +57,21 @@ google.maps.event.addDomListener(window, 'load', function ()
 var ll = new labLogo();
 ll.show();
 
+var rs = new redisServer();
+rs.host = "localhost";
+
+var rn = new robotName();
+rn.php_comm.server = rs;
+rn.update();
+//rn.show();
+
+var rd = new robotData();
+rd.php_comm.server = rs;
+rd.rn = rn;
+rd.update();
+
+tg.robot_data = rd;
+tg.grid_php_comm.server = rs;
 tg.show();
 		</script>
 	</body>

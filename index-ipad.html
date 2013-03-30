@@ -74,45 +74,65 @@ var ll = new labLogo();
 ll.show();
 
 var rs = new redisServer();
-//rs.horizontal = false;
+//rs.host = "localhost";
 rs.show();
 
-tg.show();
-
 var rn = new robotName();
+rn.php_comm.server = rs;
 rn.update();
 //rn.show();
 
+var rd = new robotData();
+rd.php_comm.server = rs;
+rd.rn = rn;
+rd.update();
+
+tg.robot_data = rd;
+tg.grid_php_comm.server = rs;
+tg.show();
+
 var tc = new timeTravel();
+tc.php_comm.server = rs;
 tc.show();
 
 var tp2 = new trajPlot2();
 tp2.robot_name = "drone2";
+tp2.robot_data = rd;
 tp2.show();
 
 var sr = new safeRange();
+sr.width = "70%";
+sr.robot_data = rd;
 sr.show();
 
 var sr2 = new safeRange();
+sr2.width = "70%"
 sr2.canvas = "safeRange2";
+sr2.robot_data = rd;
 sr2.show();
 
 var sr3 = new safeRange();
+sr3.width = "70%"
 sr3.canvas = "safeRange3";
+sr3.robot_data = rd;
 sr3.show();
 
 var dp = new dynamicPlot();
 dp.safe_range_array[0] = sr;
 dp.safe_range_array[1] = sr2;
 dp.safe_range_array[2] = sr3;
+dp.robot_data = rd;
 dp.show();
 
 var srb = new safeRange();
+srb.width = "70%"
 srb.canvas = "safeRangeb";
+srb.robot_data = rd;
 srb.show();
 
 var sp = new staticPlot();
 sp.safe_range_array[0] = srb;
+sp.robot_data = rd;
 sp.show();
 
 var ss = new serverStatus();

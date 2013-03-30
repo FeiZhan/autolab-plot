@@ -33,7 +33,22 @@
 var ll = new labLogo();
 ll.show();
 
+var rs = new redisServer();
+rs.host = "localhost";
+//rs.show();
+
+var rn = new robotName();
+rn.php_comm.server = rs;
+rn.update();
+//rn.show();
+
+var rd = new robotData();
+rd.php_comm.server = rs;
+rd.rn = rn;
+rd.update();
+
 var tp2 = new trajPlot2();
+tp2.robot_data = rd;
 tp2.show();
 		</script>
 	</body>

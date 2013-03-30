@@ -1,5 +1,5 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
-var LAB = [49.276802, -122.914913], LABEL = ["frame", "x", "y", "voltage", "current"];
+var LAB = [49.276802, -122.914913], GROUND = [10, 8];
 var STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"];
 /**
  * @class create a php communication
@@ -115,7 +115,7 @@ var phpComm = function ()
 				}
 				// obtain receiving data
 				self.receive = xmlhttp.responseText;
-				//document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
+				document.getElementById(self.rec_text).innerHTML = "receive: " + xmlhttp.responseText;
 			}
 		}
 		// if the server is assigned, send the host and port to PHP
@@ -140,7 +140,7 @@ var phpComm = function ()
 			self.cmd = self.cmd.substr(1);
 		}
 		xmlhttp.open("GET", self.file + ".php?" + self.cmd, true);
-		//document.getElementById(self.send_text).innerHTML = "send: " + self.file + ".php?" + self.cmd;
+		document.getElementById(self.send_text).innerHTML = "send: " + self.file + ".php?" + self.cmd;
 		xmlhttp.send();
 		// record the sending time
 		send_time.push(new Date().getTime());
@@ -258,6 +258,14 @@ var robotData = function ()
 	this.rn;
 	var robot_data = new Object();
 	var self = this;
+	this.getNum = function ()
+	{
+		return self.rn.count();
+	}
+	this.getNames = function ()
+	{
+		return self.rn.getNames();
+	}
 	/**
 	 * get the data of all robots
 	 * @public
@@ -412,18 +420,18 @@ var labLogo = function ()
 			html += 
 				'<table class="table table-striped" border="1" align="' + self.align + '" width="' + self.width + '">' +
 					'<tr class="info" align="' + self.align + '">' +
-						'<td><p class="text-center"><a href="./index.html" target="_blank">index</a></p></td>' +
-						'<td><p class="text-center"><a href="./index-ipad.html" target="_blank">index-ipad</a></p></td>' +
-						'<td><p class="text-center"><a href="./debugger.html" target="_blank">debugger</a></p></td>' +
-						'<td><p class="text-center"><a href="./example.html" target="_blank">example</a></p></td>' +
-						'<td><p class="text-center"><a href="./gmap.html" target="_blank">google map</a></p></td>' +
-						'<td><p class="text-center"><a href="./status.html" target="_blank">status</a></p></td>' +
-						'<td><p class="text-center"><a href="./traj1.html" target="_blank">trajectory plot 1</a></p></td>' +
-						'<td><p class="text-center"><a href="./traj2.html" target="_blank">trajectory plot 2</a></p></td>' +
-						'<td><p class="text-center"><a href="./dynamic.html" target="_blank">dynamic plot</a></p></td>' +
-						'<td><p class="text-center"><a href="./static.html" target="_blank">static plot</a></p></td>' +
-						'<td><p class="text-center"><a href="./dataparser/index.html" target="_blank">data parser</a></p></td>' +
-						'<td><p class="text-center"><a href="./test.html" target="_blank">test</a></p></td>' +
+						'<td><p class="text-center"><a href="./index.html" target="_blank">Index</a></p></td>' +
+						'<td><p class="text-center"><a href="./index-ipad.html" target="_blank">Index-ipad</a></p></td>' +
+						'<td><p class="text-center"><a href="./debugger.html" target="_blank">Debugger</a></p></td>' +
+						'<td><p class="text-center"><a href="./example.html" target="_blank">Example</a></p></td>' +
+						'<td><p class="text-center"><a href="./gmap.html" target="_blank">Google Map</a></p></td>' +
+						'<td><p class="text-center"><a href="./status.html" target="_blank">Status</a></p></td>' +
+						'<td><p class="text-center"><a href="./traj1.html" target="_blank">Trajectory Plot 1</a></p></td>' +
+						'<td><p class="text-center"><a href="./traj2.html" target="_blank">Trajectory Plot 2</a></p></td>' +
+						'<td><p class="text-center"><a href="./dynamic.html" target="_blank">Dynamic Plot</a></p></td>' +
+						'<td><p class="text-center"><a href="./static.html" target="_blank">Static Plot</a></p></td>' +
+						'<td><p class="text-center"><a href="./dataparser/index.html" target="_blank">Data Parser</a></p></td>' +
+						'<td><p class="text-center"><a href="./test.html" target="_blank">Test</a></p></td>' +
 					'</tr>' +
 				'</table>';
 		}
@@ -1522,7 +1530,6 @@ var trajPlot2 = function ()
 	 * @public
 	 */
 	this.max = 100;
-	this.robot_name = "test02";
 	/**
 	 * robot data
 	 * @public
@@ -1533,35 +1540,36 @@ var trajPlot2 = function ()
 	 * @public
 	 */
 	this.debug = "debug";
-	var data = new Array(), data2 = new Array(), gr, body, test1, line = new Array();
+	var data = new Object(), data2 = new Object(), yaw, gr, body = new Object(), test1, line = new Object(), view_type = "basic", follow;
 	var self = this;
 	/**
 	 * combine data into position data
 	 * @public
 	 */
-	var getData = function (pos0, pos1)
+	var getData = function (robot_name)
 	{
-		if (data.length > 0)
-			data = data.slice(1);
-		while (data.length < self.total_points)
+		var x = (self.robot_data.getData(robot_name, "x") + GROUND[0]/2) * (self.width / GROUND[0]);
+		var y = (self.robot_data.getData(robot_name, "y") + GROUND[1]/2) * (self.height / GROUND[1]);
+		yaw = self.robot_data.getData(robot_name, "yaw");
+		if (! (robot_name in data))
 		{
-			var y = pos0;
-			if (y < 0)
-				y = 0;
-			if (y > self.width)
-				y = self.width;
-			data.push(y);
+			data[robot_name] = new Array();
 		}
-		if (data2.length > 0)
-			data2 = data2.slice(1);
-		while (data2.length < self.total_points)
+		if (data[robot_name].length > 0)
+			data[robot_name] = data[robot_name].slice(1);
+		while (data[robot_name].length < self.total_points)
 		{
-			var y = pos1;
-			if (y < 0)
-				y = 0;
-			if (y > self.height)
-				y = self.height;
-			data2.push(y);
+			data[robot_name].push(x);
+		}
+		if (! (robot_name in data2))
+		{
+			data2[robot_name] = new Array();
+		}
+		if (data2[robot_name].length > 0)
+			data2[robot_name] = data2[robot_name].slice(1);
+		while (data2[robot_name].length < self.total_points)
+		{
+			data2[robot_name].push(y);
 		}
 	}
 	/**
@@ -1582,19 +1590,6 @@ var trajPlot2 = function ()
 		patch1.draw(gr);
 		var patch1 = new jxCircle(new jxPoint(30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
-
-		// draw the initial graphics of dynamic objects
-		getData(0, 0);
-		var pos = new jxPoint(data[data.length - 1], self.width - data2[data.length - 1]);
-		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
-		body.draw(gr);
-		//test1 = new jxArc(pos, 50, 10, -90, 90, new jxPen(new jxColor("red"),'1px'));
-		//test1.draw(gr);
-		for (var i = 0; i < data.length - 1; ++i)
-		{
-			line.push( new jxLine(new jxPoint(data[i], self.height - data2[i]), new jxPoint(data[i+1], self.height - data2[i+1]), new jxPen(new jxColor("pink"),'1px')) );
-			line[i].draw(gr);
-		}
 	}
 	/**
 	 * plot periodically
@@ -1602,21 +1597,40 @@ var trajPlot2 = function ()
 	 */
 	var update = function ()
 	{
-		var x = (self.robot_data.getData(self.robot_name, "x") + 5) * 50;
-		var y = (self.robot_data.getData(self.robot_name, "y") + 4) * 50;
-		getData(x, y);
-		var pos = new jxPoint(data[data.length - 1], self.height - data2[data.length - 1]);
-		body.remove();
-		body = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
-		body.draw(gr);
-		//test1.remove();
-		//test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
-		//test1.draw(gr);
-		for (var i = 0; i < data.length - 1; ++i)
+		var rn = self.robot_data.getNames();
+		for (i in rn)
 		{
-			line[i].remove();
-			line[i] = new jxLine(new jxPoint(data[i], self.height - data2[i]), new jxPoint(data[i+1], self.height - data2[i+1]), new jxPen(new jxColor("pink"),'1px'));
-			line[i].draw(gr);
+			getData(rn[i]);
+			var pos = new jxPoint(data[rn[i]][data[rn[i]].length - 1], data2[rn[i]][data2[rn[i]].length - 1]);
+			if (rn[i] in body)
+			{
+				body[rn[i]].remove();
+			} else
+			{
+				document.getElementById(self.canvas).getElementsByTagName("select")[1].innerHTML +=
+						'<option value="' + rn[i] + '">' + rn[i] + '</option>';
+			}
+			body[rn[i]] = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
+			body[rn[i]].draw(gr);
+			//test1.remove();
+			//test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
+			//test1.draw(gr);
+			if (rn[i] in line)
+			{
+				for (j in line[rn[i]])
+				{
+					line[rn[i]][j].remove();
+				}
+			} else
+			{
+				line[rn[i]] = new Array();
+			}
+			var len = Math.min(data[rn[i]].length - 1, data2[rn[i]].length - 1);
+			for (var j = 0; j < len; ++ j)
+			{
+				line[rn[i]][j] = new jxLine(new jxPoint(data[rn[i]][j], data2[rn[i]][j]), new jxPoint(data[rn[i]][j+1], data2[rn[i]][j+1]), new jxPen(new jxColor("green"),'1px'));
+				line[rn[i]][j].draw(gr);
+			}
 		}
 		setTimeout(update, self.timeout);
 	};
@@ -1627,8 +1641,39 @@ var trajPlot2 = function ()
 	this.show = function ()
 	{
 		var html =
-			'<div id="' + self.placeholder + '" style="background-color:#fff;overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + 'px;height:' + self.height + 'px;align:' + self.align + ';"></div>';
+			'<div id="' + self.placeholder + '" style="background-color:#fff;overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + 'px;height:' + self.height + 'px;align:' + self.align + ';"></div>' +
+			'<div class="input-prepend input-append" style="overflow:' + self.overflow + ';position:' + self.position + ';align:' + self.align + ';">' +
+				'<form>' +
+					'<span class="add-on">view</span>' +
+					'<select name="view">' +
+						'<option value="basic" selected="selected">basic</option>' +
+						'<option value="energy">energy map</option>' +
+						'<option value="time">time map</option>' +
+						'<option value="colorful">colorful trajectory</option>' +
+					'</select>' +
+					'<span class="add-on">follow</span>' +
+					'<select name="follow">' +
+						'<option value="overview" selected="selected">overview</option>' +
+					'</select>' +
+				'</form>' +
+			'</div>';
 		document.getElementById(self.canvas).innerHTML = html;
+		var select = document.getElementById(self.canvas).getElementsByTagName("select");
+		// add callback to view select
+		select[0].onclick = function ()
+		{
+			if (this.form.view.value == view_type)
+				return;
+			clearGrid();
+			view_type = this.form.view.value;
+		}
+		// add callback to follow select
+		select[1].onclick = function ()
+		{
+			if (this.form.follow.value == follow)
+				return;
+			follow = this.form.follow.value;
+		}
 		// if robot data is not defined, define one
 		if (typeof self.robot_data == "undefined")
 		{
@@ -2439,9 +2484,10 @@ var trajGmap = function ()
 	 */
 	var clearGrid = function ()
 	{
-		for (key in grid)
+		for (i in grid)
 		{
-			grid[key].setMap(null);
+			google.maps.event.clearListeners(grid[i], "click");
+			grid[i].setMap(null);
 		}
 	}
 	/**
@@ -2664,16 +2710,14 @@ var trajGmap = function ()
 	{
 		if (view_type == "energy" || view_type == "time")
 		{
-			//[bug] simply clear all grids in every iteration. Perhaps there is a better way
-			clearGrid();
 			// I guess it is the way to calculate the grid size
-			var grid_size = .001 * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
+			// don't need to fix the size of grid
+			var grid_size = .001; // * Math.pow(17, 10) / Math.pow(map.getZoom(), 10);
 			var center_pos = coordToGrid(map.getCenter().lat(), map.getCenter().lng());
 			self.grid_php_comm.cmd = "method=calGrid&grid_size=" + grid_size + "&type=" + view_type + "&centerx=" + center_pos[0] + "&centery=" + center_pos[1];
 			self.grid_php_comm.commPhp();
 			// separate the data into different grids
 			var ret = self.grid_php_comm.receive.split(" ");
-document.getElementById("debug").innerHTML = "debug: " + self.grid_php_comm.receive;
 			var dist, min;
 			for (var i = 0; i + 3 < ret.length; i += 4)
 			{
@@ -2697,6 +2741,11 @@ document.getElementById("debug").innerHTML = "debug: " + self.grid_php_comm.rece
 				{
 					color = "#" + color + color + "FF";
 				}
+				var tmp_grid;
+				if ((x + " " + y) in grid)
+				{
+					tmp_grid = grid[x + " " + y];
+				}
 				grid[x + " " + y] = new google.maps.Rectangle({
 					strokeColor: 'grey',
 					strokeOpacity: 0.2,
@@ -2709,7 +2758,12 @@ document.getElementById("debug").innerHTML = "debug: " + self.grid_php_comm.rece
 						new google.maps.LatLng(LAB[0] + x * grid_size, LAB[1] + y * grid_size),
 						new google.maps.LatLng(LAB[0] + x * grid_size + grid_size, LAB[1] + y * grid_size + grid_size))
 				});
-				google.maps.event.clearListeners(grid[x + " " + y], "click");
+				// old grid need to be deleted, and tmp_grid is used to avoid flashing
+				if (typeof tmp_grid != "undefined")
+				{
+					google.maps.event.clearListeners(grid[x + " " + y], "click");
+					tmp_grid.setMap(null);
+				}
 				// add the info window into the grid
 				google.maps.event.addListener(grid[x + " " + y], "click", infoWnd);
 				// save the grid value in order to be displayed on the info window
@@ -2750,7 +2804,7 @@ document.getElementById("debug").innerHTML = "debug: " + self.grid_php_comm.rece
 								'<option value="basic" selected="selected">basic</option>' +
 								'<option value="energy">energy map</option>' +
 								'<option value="time">time map</option>' +
-								'<option value="colorful">colorful trajectory</option>' +
+								'<option value="colorful">state trajectory</option>' +
 							'</select>' +
 							'<span class="add-on">follow</span>' +
 							'<select name="follow">' +
