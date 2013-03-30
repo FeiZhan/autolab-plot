@@ -322,9 +322,24 @@ var robotData = function ()
 			var tmp = robot[i].split(" ");
 			var robot_tmp = new Object();
 			// for each value
-			for (var j = 0; j < tmp.length; j += 2)
+			for (var j = 0; j + 1 < tmp.length; j += 2)
 			{
-				robot_tmp[tmp[j]] = parseFloat(tmp[j + 1]);
+				if (typeof tmp[j] == "undefined" || "" == tmp[j] || " " == tmp[j])
+				{
+					++ j;
+					if (j + 1 >= tmp.length)
+					{
+						break;
+					}
+				}
+				// if it is number
+				if (!isNaN(parseFloat(tmp[j + 1])) && isFinite(tmp[j + 1]))
+				{
+					robot_tmp[tmp[j]] = parseFloat(tmp[j + 1]);
+				} else
+				{
+					robot_tmp[tmp[j]] = tmp[j + 1];
+				}
 			}
 			robot_data[name[i]] = robot_tmp;
 		}
@@ -947,7 +962,7 @@ var staticPlot = function ()
 			hoverable: true,
 			autoHighlight: false
 	}};
-	var update_time = 0, plot, dataset, hover_pos, updateLegendTimeout, zoom_range = new Array();
+	var update_time = 0, plot, dataset, str_dataset = new Object(), hover_pos, updateLegendTimeout, zoom_range = new Array();
 	var self = this;
 	/**
 	 * plot periodically
@@ -980,6 +995,10 @@ var staticPlot = function ()
 				var tmp2 = tmp[0].split(" "), xaxis_tmp = 0, yaxis_tmp = -1;
 				for (var i = 0; i + 1 < tmp2.length; i += 2)
 				{
+					if ("servertime" == tmp2[i])
+					{
+						continue;
+					}
 					if (self.yaxis == tmp2[i])
 					{
 						yaxis_tmp = i;
@@ -1036,13 +1055,26 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 						{
 							break;
 						}
+						if ("servertime" == tmp2[j * 2])
+						{
+							continue;
+						}
 						if (yaxis_tmp >= 0 && yaxis_tmp != j * 2)
 						{
 							continue;
 						}
-						var tmp3 = parseFloat(tmp2[j * 2 + 1]);
-						if (typeof tmp3 == "undefined" || isNaN(tmp3))
+						var tmp3;
+						// if is number
+						if (! isNaN(parseFloat(tmp2[j * 2 + 1])) && isFinite(tmp2[j * 2 + 1]))
 						{
+							tmp3 = parseFloat(tmp2[j * 2 + 1]);
+						} else
+						{
+							if (! (("str" + dataset_order) in str_dataset))
+							{
+								str_dataset["str" + dataset_order] = new Array();
+							}
+							str_dataset["str" + dataset_order].push(tmp2[j * 2 + 1]);
 							tmp3 = 0;
 						}
 						dataset[dataset_order ++].data.push([xaxis_tmp2, tmp3]);
@@ -1059,11 +1091,6 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 		updateLegendTimeout = null;
 		var pos = hover_pos;
 		var axes = plot.getAxes();
-		// we don't need to test if it is inside of the canvas
-		/*if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
-		{
-			return;
-		}*/
 		var ans;
 		for (var i = 0; i < dataset.length; ++ i)
 		{
@@ -1073,6 +1100,11 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 			{
 				if (series.data[j][0] > pos.x)
 				{
+					if (series.data[j][1] == 0 && ("str" + i) in str_dataset)
+					{
+						ans = str_dataset["str" + i][j];
+						break;
+					}
 					// Interpolate
 					var p1 = series.data[j - 1], p2 = series.data[j];
 					if (p1 == null)
@@ -1089,7 +1121,13 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 					break;
 				}
 			}
-			$("#" + self.placeholder + " .legendLabel").eq(i).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+			if (typeof ans == "string")
+			{
+				$("#" + self.placeholder + " .legendLabel").eq(i).text(series.label.replace(/=.*/, "= " + ans));
+			} else
+			{
+				$("#" + self.placeholder + " .legendLabel").eq(i).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+			}
 		}
 	}
 	/**
@@ -1736,6 +1774,10 @@ var dynamicPlot = function ()
 				if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
 				{
 					ans = series.data[series.data.length - 1][1];
+					if (isNaN(ans) || 0 == ans)
+					{
+						ans = self.robot_data.getData(self.robot, key);
+					}
 				} else
 				{
 					var flag = false;
@@ -1768,7 +1810,13 @@ var dynamicPlot = function ()
 				}
 				if ("state" != key && "substate" != key)
 				{
-					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+					if (typeof ans == "string")
+					{
+						$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans));
+					}else
+					{
+						$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
+					}
 				}
 				else if ("state" == key)
 				{
@@ -1903,14 +1951,17 @@ var dynamicPlot = function ()
 				if (typeof dataset[i].data[j][1] != "undefined" && ! isNaN(dataset[i].data[j][1]))
 				{
 					tmp.push(dataset[i].data[j][1]);
+				} else
+				{
+					tmp.push(0);
 				}
 			}
 			if (tmp.length > 0)
 			{
 				tmp = tmp.slice(1);
 			}
-			var y = NaN;
-			if (typeof data_ret != "undefined" && typeof data_ret[i] != "undefined")
+			var y = 0;
+			if (typeof data_ret != "undefined" && typeof data_ret[i] != "undefined" && typeof data_ret[i] != "string")
 			{
 				y = data_ret[i];
 			}
