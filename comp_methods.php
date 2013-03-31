@@ -205,7 +205,7 @@ function random_robot()
 	// the ground is 10 * 8
 	$x = rand(-5 * 100, 100 * 5) / 100;
 	$y = rand(-4 * 100, 100 * 4) / 100;
-	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." elect ".(rand(0, 1) ? "ELECTED" : "NOELECTED");
+	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." elect ".(rand(0, 1) ? "ELECTED" : "NOELECTED")." yaw ".rand(-M_PI * 100, 100 * M_PI) / 100;
 }
 // generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.
 function field_robot($client_value)
@@ -223,6 +223,26 @@ function field_robot($client_value)
 	$x = floatval($c[3]) + rand(-10000, 10000) / 10000 * .001;
 	$y = floatval($c[5]) + rand(-10000, 10000) / 10000 * .001;
 	return "frame ".($last_time+1)." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." state ".(rand(0, 5))." substate ".(rand(0, 5));
+}
+function setStaticGraphics()
+{
+	global $client;
+	$client->del("staticgraphics");
+	//map
+	$client->rpush("staticgraphics", "image -5 -4 http://localhost/autolab-plot/resource/cave_compact.png 10 8");
+	// home
+	$client->rpush("staticgraphics", "circle -4.5 -3.5 0.3 pen blue 1 0");
+	// text home
+	$client->rpush("staticgraphics", "text -4.5 -3.5 home 8 pen blue 1 0");
+	// patch 1
+	$client->rpush("staticgraphics", "circle -4.5 3.5 0.3 pen green 1 0");
+	// text patch
+	$client->rpush("staticgraphics", "text -4.5 3.5 patch 8 pen green 1 0");
+	// recharging site
+	$client->rpush("staticgraphics", "circle 4.5 -3.5 0.3 pen red 1 0");
+	// text recharging site
+	$client->rpush("staticgraphics", "text 3 -3.5 recharging_site 8 pen red 1 0");
+	echo "ok";
 }
 //@todo more functions for generating data should be added
 function generateData()
@@ -463,6 +483,23 @@ function calGrid()
 		$client->set("last_time_color", $old_color);
 		break;
 	default:
+	}
+}
+function clearGrids()
+{
+	global $client;
+	$client->set("last_energy", "");
+	$client->set("last_energy_frame", "");
+	$client->set("last_time", "");
+	$client->set("last_time_frame", "");
+}
+function getStaticGraphics()
+{
+	global $client;
+	$g = $client->lrange("staticgraphics", 0, -1);
+	foreach ($g as $i)
+	{
+		echo $i.", ";
 	}
 }
 // call corresponding method according to $method

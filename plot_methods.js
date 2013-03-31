@@ -385,7 +385,7 @@ var labLogo = function ()
 	 * the path and file name of the logo
 	 * @public
 	 */
-	this.src = "logo.png";
+	this.src = "resource/logo.png";
 	/**
 	 * the title of this page
 	 * @public
@@ -1007,6 +1007,10 @@ var staticPlot = function ()
 					{
 						continue;
 					}
+					if (self.xaxis == tmp2[i])
+					{
+						xaxis_tmp = i;
+					}
 					if (self.yaxis == tmp2[i])
 					{
 						yaxis_tmp = i;
@@ -1015,11 +1019,12 @@ var staticPlot = function ()
 					{
 						continue;
 					}
-					dataset.push({label: tmp2[i] + " = 0.00", data: new Array(), yaxis: i/2 + 1, threshold: {color: self.threshold.color} });
-					if (self.xaxis == tmp2[i])
+					var label = tmp2[i] + " = 0.00";
+					if ("servertime" != self.xaxis)
 					{
-						xaxis_tmp = i;
+						label = tmp2[i];
 					}
+					dataset.push({label: label, data: new Array(), yaxis: i/2 + 1, threshold: {color: self.threshold.color} });
 					var flag = false;
 					// if have corresponding safe-range
 					for (var j in self.safe_range_array)
@@ -1054,6 +1059,7 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 						self.option.xaxis.mode = "time";
 					} else
 					{
+//document.getElementById("debug").innerHTML += xaxis_tmp + " ";
 						self.option.xaxis.mode = undefined;
 					}
 					var dataset_order = 0;
@@ -1096,6 +1102,14 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 	//
 	var updateLegend = function ()
 	{
+		if ("servertime" != self.xaxis)
+		{
+			for (var i = 0; i < dataset.length; ++ i)
+			{
+				$("#" + self.placeholder + " .legendLabel").eq(i).text(dataset[i].label.replace(/=.*/, ""));
+			}
+			return;
+		}
 		updateLegendTimeout = null;
 		var pos = hover_pos;
 		var axes = plot.getAxes();
@@ -1535,12 +1549,14 @@ var trajPlot2 = function ()
 	 * @public
 	 */
 	this.robot_data;
+	this.php_comm = new phpComm();
 	/**
 	 * the placeholder of debug info
 	 * @public
 	 */
 	this.debug = "debug";
-	var data = new Object(), data2 = new Object(), yaw, gr, body = new Object(), test1, line = new Object(), view_type = "basic", follow;
+	var view_type = "basic", follow, gr, test1;
+	var data = new Object(), data2 = new Object(), yaw = new Object(), body = new Object(), dir = new Object(), line = new Object();
 	var self = this;
 	/**
 	 * combine data into position data
@@ -1550,7 +1566,7 @@ var trajPlot2 = function ()
 	{
 		var x = (self.robot_data.getData(robot_name, "x") + GROUND[0]/2) * (self.width / GROUND[0]);
 		var y = (self.robot_data.getData(robot_name, "y") + GROUND[1]/2) * (self.height / GROUND[1]);
-		yaw = self.robot_data.getData(robot_name, "yaw");
+		yaw[robot_name] = self.robot_data.getData(robot_name, "yaw");
 		if (! (robot_name in data))
 		{
 			data[robot_name] = new Array();
@@ -1572,16 +1588,186 @@ var trajPlot2 = function ()
 			data2[robot_name].push(y);
 		}
 	}
-	/**
-	 * plot static stuff
-	 * @private
-	 */
+	var parseNum = function (num)
+	{
+		num = parseFloat(num);
+		if (isNaN(num))
+		{
+			num = 0;
+		} else
+		{
+			num = num * (self.width / GROUND[0]);
+		}
+		return num;
+	}
+	var parsePoint = function (x, y)
+	{
+		x = parseFloat(x);
+		if (isNaN(x))
+		{
+			x = 0;
+		} else
+		{
+			x = (x + GROUND[0]/2) * (self.width / GROUND[0]);
+		}
+		y = parseFloat(y);
+		if (isNaN(y))
+		{
+			y = 0;
+		} else
+		{
+			y = (y + GROUND[1]/2) * (self.height / GROUND[1]);
+		}
+		return new jxPoint(x, y);
+	}
+	var parsePen = function (arg, start)
+	{
+		for (var i = start; i + 3 < arg.length; ++ i)
+		{
+			if ("pen" == arg[i])
+			{
+				return new jxPen(new jxColor(arg[i + 1]), arg[i + 2] + "px", arg[i + 3]);
+			}
+		}
+		return null;
+	}
+	var parseBrush = function (arg, start)
+	{
+		for (var i = start; i + 2 < arg.length; ++ i)
+		{
+			if ("brush" == arg[i])
+			{
+				return new jxBrush(new jxColor(arg[i + 1]), arg[i + 2]);
+			}
+		}
+		return null;
+	}
+	var drawGraphics = function (cmd)
+	{
+		var arg = cmd.split(" "), pen, brush, g;
+		switch (arg[0])
+		{
+		case "point":
+			g = parsePoint(arg[1], arg[2]);
+			g.draw(gr);
+			break;
+		case "line":
+			pen = parsePen(arg, 3);
+			if (typeof pen == "undefined")
+			{
+				g = new jxLine(parsePoint(arg[1], arg[2]), parsePoint(arg[3], arg[4]));
+			} else
+			{
+				g = new jxLine(parsePoint(arg[1], arg[2]), parsePoint(arg[3], arg[4]), pen);
+			}
+			g.draw(gr);
+			break;
+		case "rect":
+			pen = parsePen(arg, 5);
+			if (typeof pen == "undefined")
+			{
+				brush = parseBrush(arg, 5);
+				if (typeof brush == "undefined")
+				{
+					g = new jxRect(parsePoint(arg[1], arg[2]), parseNum(arg[3]), parseNum(arg[4]));
+				} else
+				{
+					g = new jxRect(parsePoint(arg[1], arg[2]), parseNum(arg[3]), parseNum(arg[4]), brush);
+				}
+			} else
+			{
+				brush = parseBrush(arg, 9);
+				if (typeof brush == "undefined")
+				{
+					g = new jxRect(parsePoint(arg[1], arg[2]), parseNum(arg[3]), parseNum(arg[4]), pen);
+				} else
+				{
+					g = new jxRect(parsePoint(arg[1], arg[2]), parseNum(arg[3]), parseNum(arg[4]), pen, brush);
+				}
+			}
+			g.draw(gr);
+			break;
+		case "circle":
+			pen = parsePen(arg, 4);
+			if (pen == null)
+			{
+				brush = parseBrush(arg, 4);
+			} else
+			{
+				brush = parseBrush(arg, 8);
+			}
+			g = new jxCircle(parsePoint(arg[1], arg[2]), parseNum(arg[3]), pen, brush);
+			g.draw(gr);
+			break;
+		//jxText(point<jxPoint>, text, [font<jxFont>], [pen<jxPen>], [brush<jxBrush>], [angle])
+		//jxFont(family, weight, size, style, variant)
+		case "text":
+			pen = parsePen(arg, 5);
+			if (pen == null)
+			{
+				brush = parseBrush(arg, 5);
+			} else
+			{
+				brush = parseBrush(arg, 9);
+			}
+			g = new jxText(parsePoint(arg[1], arg[2]), arg[3], new jxFont(null, null, arg[4]+"pt", null, null), pen, brush);
+			g.draw(gr);
+			break;
+		//jxImage(point<jxPoint>, url, width, height, [angle])
+		case "image":
+			g = new jxImage(parsePoint(arg[1], arg[2]), arg[3], parseNum(arg[4]), parseNum(arg[5]));
+			g.draw(gr);
+			break;
+		}
+	}
+	var static_state = 0;
+	var getStatic = function ()
+	{
+		switch (static_state)
+		{
+		// new, set static graphics
+		case 0:
+			self.php_comm.cmd = "method=setStaticGraphics";
+			self.php_comm.commPhp();
+			static_state = 1;
+			break;
+		// wait for receiving message of setting
+		case 1:
+			if ("ok" == self.php_comm.receive)
+			{
+				self.php_comm.receive = "";
+				static_state = 2;
+			}
+			break;
+		// get static graphics
+		case 2:
+			self.php_comm.cmd = "method=getStaticGraphics";
+			self.php_comm.commPhp();
+			static_state = 3;
+			break;
+		// wait for receiving message of getting
+		case 3:
+			if ("" != self.php_comm.receive)
+			{
+				var boundary = new jxRect(new jxPoint(0,0), self.width, self.height, new jxPen(new jxColor("grey"), "1px"));
+				boundary.draw(gr);
+				var g = self.php_comm.receive.split(", ");
+				for (i in g)
+				{
+					drawGraphics(g[i]);
+				}
+				static_state = 4;
+			}
+			break;
+		}
+		if (4 != static_state)
+		{
+			setTimeout(getStatic, self.timeout);
+		}
+	}
 	var plotStatic = function ()
 	{
 		// draw the static graphics by jsDraw2DX
-		gr = new jxGraphics(document.getElementById(self.placeholder));
-		var boundary = new jxRect(new jxPoint(0,0), self.width, self.height, new jxPen(new jxColor("grey"),'1px'));
-		boundary.draw(gr);
 		var grid = new jxRect(new jxPoint(330, 200), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
 		//grid.draw(gr);
 		var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
@@ -1612,6 +1798,16 @@ var trajPlot2 = function ()
 			}
 			body[rn[i]] = new jxCircle(pos, 10, new jxPen(new jxColor("black"),'1px'));
 			body[rn[i]].draw(gr);
+			if (rn[i] in dir)
+			{
+				dir[rn[i]].remove();
+			}
+			if (typeof yaw[rn[i]] != "undefined" && ! isNaN(yaw[rn[i]]))
+			{
+				var dir_pt = new jxPoint(data[rn[i]][data[rn[i]].length - 1] + Math.sin(yaw[rn[i]]) * 30, data2[rn[i]][data2[rn[i]].length - 1] + Math.cos(yaw[rn[i]]) * 30);
+				dir[rn[i]] = new jxLine(pos, dir_pt, new jxPen(new jxColor("black"),'1px'));
+				dir[rn[i]].draw(gr);
+			}
 			//test1.remove();
 			//test1 = new jxArc(pos, 130, 100, -90, 90, new jxPen(new jxColor("red"),'1px'));
 			//test1.draw(gr);
@@ -1628,7 +1824,7 @@ var trajPlot2 = function ()
 			var len = Math.min(data[rn[i]].length - 1, data2[rn[i]].length - 1);
 			for (var j = 0; j < len; ++ j)
 			{
-				line[rn[i]][j] = new jxLine(new jxPoint(data[rn[i]][j], data2[rn[i]][j]), new jxPoint(data[rn[i]][j+1], data2[rn[i]][j+1]), new jxPen(new jxColor("green"),'1px'));
+				line[rn[i]][j] = new jxLine(new jxPoint(data[rn[i]][j], data2[rn[i]][j]), new jxPoint(data[rn[i]][j+1], data2[rn[i]][j+1]), new jxPen(new jxColor("pink"),'1px'));
 				line[rn[i]][j].draw(gr);
 			}
 		}
@@ -1680,7 +1876,8 @@ var trajPlot2 = function ()
 			self.robot_data = new robotData();
 			self.robot_data.update();
 		}
-		plotStatic();
+		gr = new jxGraphics(document.getElementById(self.placeholder));
+		getStatic();
 		update();
 	}
 }
@@ -1773,7 +1970,7 @@ var dynamicPlot = function ()
 		series: {
 			shadowSize: 0,
 			lines: {show: true},
-			points: {show: true} // bad-looking
+			points: {show: true}
 		},
 		crosshair: {mode: "x"},
 		zoom: {interactive: true},
@@ -1781,7 +1978,6 @@ var dynamicPlot = function ()
 		// it can adjust automatically
 		//@bug still some bugs
 		//yaxis: { min: 0, max: 100 },
-		//@todo time mode
 		xaxis: { min: -this.total_points + 1, max: 0, zoomRange: [-this.total_points + 1, 0]},
 		yaxis: {
 			tickFormatter: function (v, axis)
@@ -1802,85 +1998,81 @@ var dynamicPlot = function ()
 	var self = this;
 	var updateLegend = function ()
 	{
-		updateLegendTimeout = null;
-		if (hover_pos)
+		var pos = hover_pos;
+		var axes = plot.getAxes();
+		var ans, i = 0;
+		for (var key in dataset)
 		{
-			var pos = hover_pos;
-			var axes = plot.getAxes();
-			var ans, i = 0;
-			for (var key in dataset)
+			if (("parameter" == self.label && ("frame" == key || "x" == key || "y" == key || "state" == key || "substate" == key))
+				|| ("all" != self.label && "parameter" != self.label && self.label != key))
 			{
-				if (("parameter" == self.label && ("frame" == key || "x" == key || "y" == key || "state" == key || "substate" == key))
-					|| ("all" != self.label && "parameter" != self.label && self.label != key))
+				continue;
+			}
+			var series = dataset[key];
+			if (typeof pos == "undefined" || pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
+			{
+				ans = series.data[series.data.length - 1][1];
+				if (isNaN(ans) || 0 == ans)
 				{
-					continue;
+					ans = self.robot_data.getData(self.robot, key);
 				}
-				var series = dataset[key];
-				if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max || pos.y < axes.yaxis.min || pos.y > axes.yaxis.max)
+			} else
+			{
+				var flag = false;
+				// Find the nearest points in x-wise
+				for (var j = 0; j < series.data.length; ++ j)
 				{
-					ans = series.data[series.data.length - 1][1];
-					if (isNaN(ans) || 0 == ans)
+					if (series.data[j][0] > pos.x)
 					{
-						ans = self.robot_data.getData(self.robot, key);
-					}
-				} else
-				{
-					var flag = false;
-					// Find the nearest points in x-wise
-					for (var j = 0; j < series.data.length; ++ j)
-					{
-						if (series.data[j][0] > pos.x)
+						// Interpolate
+						var p1 = series.data[j - 1], p2 = series.data[j];
+						if (p1 == null)
 						{
-							// Interpolate
-							var p1 = series.data[j - 1], p2 = series.data[j];
-							if (p1 == null)
-							{
-								ans = p2[1];
-							} else if (p2 == null)
-							{
-								ans = p1[1];
-							} else
-							{
-								// it is originally string
-								ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
-							}
-							flag = true;
-							break;
+							ans = p2[1];
+						} else if (p2 == null)
+						{
+							ans = p1[1];
+						} else
+						{
+							// it is originally string
+							ans = parseFloat(p1[1]) + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
 						}
-					}
-					if (false == flag)
-					{
-						ans = 0;
+						flag = true;
+						break;
 					}
 				}
-				if ("state" != key && "substate" != key)
+				if (false == flag)
 				{
-					if (typeof ans == "string")
-					{
-						$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans));
-					}else
-					{
-						$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
-					}
+					ans = 0;
 				}
-				else if ("state" == key)
+			}
+			if ("state" != key && "substate" != key)
+			{
+				if (typeof ans == "string")
 				{
-					ans = Math.round(ans);
-					if (ans >= STATE.length)
-					{
-						ans = 0;
-					}
-					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + STATE[ans]));
-				}
-				else if ("substate" == key)
+					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans));
+				}else
 				{
-					ans = Math.round(ans);
-					if (ans >= SUBSTATE.length)
-					{
-						ans = 0;
-					}
-					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + SUBSTATE[ans]));
+					$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + ans.toFixed(2)));
 				}
+			}
+			else if ("state" == key)
+			{
+				ans = Math.round(ans);
+				if (ans >= STATE.length)
+				{
+					ans = 0;
+				}
+				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + STATE[ans]));
+			}
+			else if ("substate" == key)
+			{
+				ans = Math.round(ans);
+				if (ans >= SUBSTATE.length)
+				{
+					ans = 0;
+				}
+				$("#" + self.placeholder + " .legendLabel").eq(i ++).text(series.label.replace(/=.*/, "= " + SUBSTATE[ans]));
 			}
 		}
 		setTimeout(updateLegend, 50);
@@ -2799,6 +2991,7 @@ var trajGmap = function ()
 		var html =
 					'<form align="' + self.align + '">' +
 						'<div class="input-prepend input-append" align="' + self.align + '">' +
+							'<input class="btn btn-primary" type="button" value="clear grids">' +
 							'<span class="add-on">view</span>' +
 							'<select name="view">' +
 								'<option value="basic" selected="selected">basic</option>' +
@@ -2814,6 +3007,13 @@ var trajGmap = function ()
 						'</div>' +
 					'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
+		// clear grids
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = function ()
+		{
+			clearGrid();
+			self.grid_php_comm.cmd = "method=clearGrids";
+			self.grid_php_comm.commPhp();
+		}
 		var select = document.getElementById(self.canvas).getElementsByTagName("select");
 		// add callback to view select
 		select[0].onclick = function ()
