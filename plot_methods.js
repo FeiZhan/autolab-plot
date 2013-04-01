@@ -1,6 +1,12 @@
 var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
 var LAB = [49.276802, -122.914913], GROUND = [10, 8];
-var STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"];
+var STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"]
+var STATE_COLOR = ["black", "blue", "red", "green", "yellow", "cyan", "grey", "orchid", "pink", "tan", "brown", "white"];
+var STATE_ICON = [	[],
+					[{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}], [{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4}, offset: '0', repeat: '20px'}],
+					[{icon: {path: 'M -2,0 0,-2 2,0 0,2 z',	strokeColor: '#F00', fillColor: '#F00', fillOpacity: 1}, offset: '50%'}],
+					[{icon: {path: 'M -2,-2 2,2 M 2,-2 -2,2', strokeColor: '#292', strokeWeight: 4}, offset: '50%'}],
+					[{icon: {path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3', strokeColor: '#00F', rotation: 0}, offset: '50%'}] ]
 /**
  * @class create a php communication
  */
@@ -678,12 +684,12 @@ var keySetter = function ()
 	 * initial keys
 	 * @public
 	 */
-	this.init_key = ["test01", "test02", "last_energy", "last_energy_frame", "last_time", "last_time_frame"];
+	this.init_key = ["test01", "test02"];
 	/**
 	 * initial values
 	 * @public
 	 */
-	this.init_value = ["@@@field_robot", "@@@random_robot", "@@@clear", "@@@clear", "@@@clear", "@@@clear"];
+	this.init_value = ["@@@field_robot", "@@@random_robot"];
 	/**
 	 * initial amout of lines
 	 * @public
@@ -745,7 +751,6 @@ var keySetter = function ()
 			key.push(this.form.key.value);
 			value[key.length - 1] = this.form.value.value;
 		}
-//document.getElementById(self.debug).innerHTML = "debug: " + this.form.key.value + this.form.value.value;
 	}
 	/**
 	 * add callback function to every submit button (the amount of those is not reliable)
@@ -858,16 +863,12 @@ var keySetter = function ()
 					'</tr>' +
 					'<tr align="center">' +
 						'<td>@@@random_robot</td>' +
-						'<td>A set of random numbers describing a robot as "frame x y voltage current". The boundary of x and y is [0, 100]</td>' +
+						'<td>A set of random numbers describing a robot as "frame x y voltage current". The boundaries of x and y are [0, 500] and [0, 400]</td>' +
 					'</tr>' +
 					'<tr align="center">' +
 						'<td>@@@field_robot</td>' +
 						'<td>A set of random numbers describing a robot as "frame x y voltage current state substate", with unconstrained x and y representing a field robot moving out of the lab.</td>' +
 					'</tr>' +
-					/*'<tr align="center">' +
-						'<td>@@@-</td>' +
-						'<td>A set of random numbers describing a camera return values as "time robotID x y voltage current".</td>' +
-					'</tr>' +*/
 				'</table>';
 		}
 		document.getElementById(self.canvas).innerHTML = html;
@@ -1813,20 +1814,26 @@ var trajPlot2 = function ()
 			//test1.draw(gr);
 			if (rn[i] in line)
 			{
-				for (j in line[rn[i]])
-				{
-					line[rn[i]][j].remove();
-				}
+					line[rn[i]].pop();
 			} else
 			{
 				line[rn[i]] = new Array();
 			}
 			var len = Math.min(data[rn[i]].length - 1, data2[rn[i]].length - 1);
-			for (var j = 0; j < len; ++ j)
+			var color = STATE_COLOR[0];
+			if ("colorful" == view_type)
 			{
-				line[rn[i]][j] = new jxLine(new jxPoint(data[rn[i]][j], data2[rn[i]][j]), new jxPoint(data[rn[i]][j+1], data2[rn[i]][j+1]), new jxPen(new jxColor("pink"),'1px'));
-				line[rn[i]][j].draw(gr);
+				color = parseInt(self.robot_data.getData(rn[i], "state"));
+				if (color < STATE_COLOR.length)
+				{
+					color = STATE_COLOR[color];
+				} else
+				{
+					color = STATE_COLOR[0];
+				}
 			}
+			line[rn[i]].push(new jxLine(new jxPoint(data[rn[i]][data[rn[i]].length - 2], data2[rn[i]][data2[rn[i]].length - 2]), new jxPoint(data[rn[i]][data[rn[i]].length - 1], data2[rn[i]][data2[rn[i]].length - 1]), new jxPen(new jxColor(color),'1px')));
+			line[rn[i]][line[rn[i]].length - 1].draw(gr);
 		}
 		setTimeout(update, self.timeout);
 	};
@@ -1840,12 +1847,13 @@ var trajPlot2 = function ()
 			'<div id="' + self.placeholder + '" style="background-color:#fff;overflow:' + self.overflow + ';position:' + self.position + ';width:' + self.width + 'px;height:' + self.height + 'px;align:' + self.align + ';"></div>' +
 			'<div class="input-prepend input-append" style="overflow:' + self.overflow + ';position:' + self.position + ';align:' + self.align + ';">' +
 				'<form>' +
+					'<input class="btn btn-primary" type="button" value="clear grids">' +
 					'<span class="add-on">view</span>' +
 					'<select name="view">' +
 						'<option value="basic" selected="selected">basic</option>' +
 						'<option value="energy">energy map</option>' +
 						'<option value="time">time map</option>' +
-						'<option value="colorful">colorful trajectory</option>' +
+						'<option value="colorful">state trajectory</option>' +
 					'</select>' +
 					'<span class="add-on">follow</span>' +
 					'<select name="follow">' +
@@ -1860,7 +1868,6 @@ var trajPlot2 = function ()
 		{
 			if (this.form.view.value == view_type)
 				return;
-			clearGrid();
 			view_type = this.form.view.value;
 		}
 		// add callback to follow select
@@ -2644,7 +2651,7 @@ var trajGmap = function ()
 		center: new google.maps.LatLng(LAB[0], LAB[1]),
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
-	var view_type = "basic", follow = "", map;
+	var view_type = "basic", follow = "", map, update_grid = new Object();
 	var last_coord = new Object(), coord = new Object(), rpath = new Object(), robot = new Object(), grid = new Object(), grid_value = new Object();
 	var self = this;
 	/**
@@ -2712,112 +2719,6 @@ var trajGmap = function ()
 		});
 		infownd.open(map);
 	}
-	var getColor = function (robotname)
-	{
-		var color;
-		switch (parseInt(self.robot_data.getData(robotname, "state")))
-		{
-		case 1:
-			color = "blue";
-			break;
-		case 2:
-			color = "red";
-			break;
-		case 3:
-			color = "green";
-			break;
-		case 4:
-			color = "yellow";
-			break;
-		case 5:
-			color = "cyan";
-			break;
-		case 6:
-			color = "grey";
-			break;
-		case 7:
-			color = "orchid";
-			break;
-		case 8:
-			color = "pink";
-			break;
-		case 9:
-			color = "tan";
-			break;
-		case 10:
-			color = "brown";
-			break;
-		case 11:
-			color = "white";
-			break;
-		default:
-			color = "black";
-			break;
-		}
-		return color;
-	}
-	/**
-	 * get the icon representing substate
-	 * @private
-	 */
-	var getIcon = function (robotname)
-	{
-		var icon = new Array();
-		switch (parseInt(self.robot_data.getData(robotname, "substate")))
-		{
-		case 0:
-			icon = [];
-			break;
-		case 1: // arrows
-			icon = [{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}];
-			break;
-		case 2: // dashed lines
-			icon = [{
-				icon: {
-					path: 'M 0,-1 0,1',
-					strokeOpacity: 1,
-					scale: 4
-				},
-				offset: '0',
-				repeat: '20px'
-			}];
-			break;
-		case 3:
-			icon = [{
-				icon: {
-					path: 'M -2,0 0,-2 2,0 0,2 z',
-					strokeColor: '#F00',
-					fillColor: '#F00',
-					fillOpacity: 1
-				},
-				offset: '50%'
-			}];
-			break;
-		case 4:
-			icon = [{
-				icon: {
-					path: 'M -2,-2 2,2 M 2,-2 -2,2',
-					strokeColor: '#292',
-					strokeWeight: 4
-				},
-				offset: '50%'
-			}];
-			break;
-		case 5:
-			icon = [{
-				icon: {
-					path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3',
-					strokeColor: '#00F',
-					 rotation: 0
-				},
-				offset: '50%'
-			}];
-			break;
-		default:
-			break;
-		}
-		return icon;
-	}
 	/**
 	 * generate the trajectory
 	 * @private
@@ -2855,9 +2756,23 @@ var trajGmap = function ()
 				// select if it is colorful
 				if (view_type == "colorful")
 				{
-					color = getColor(i); //"#" + Math.floor(Math.random()*16777215).toString(16);
+					color = parseInt(self.robot_data.getData(i, "state"));
+					if (color < STATE_COLOR.length)
+					{
+						color = STATE_COLOR[color]; //"#" + Math.floor(Math.random()*16777215).toString(16);
+					} else
+					{
+						color = STATE_COLOR[0];
+					}
 					weight = 2;
-					icon = getIcon(i);
+					icon = parseInt(self.robot_data.getData(i, "substate"));
+					if (icon < STATE_ICON.length)
+					{
+						icon = STATE_ICON[icon];
+					} else
+					{
+						icon = STATE_COLOR[0];
+					}
 
 				} else
 				{
@@ -2874,7 +2789,8 @@ var trajGmap = function ()
 					position: new google.maps.LatLng(coord[i][0], coord[i][1]),
 					map: map,
 					title: i,
-					icon: "cabs.png"
+					icon: "resource/cabs.png",
+					//shadow: {url: 'resource/cabs.shadow.png',}
 				});
 				rpath[i].push(new google.maps.Polyline({
 					map: map,
@@ -2911,6 +2827,7 @@ var trajGmap = function ()
 			// separate the data into different grids
 			var ret = self.grid_php_comm.receive.split(" ");
 			var dist, min;
+			update_grid = new Object();
 			for (var i = 0; i + 3 < ret.length; i += 4)
 			{
 				// the format of the data is "x y color value"
@@ -2960,6 +2877,15 @@ var trajGmap = function ()
 				google.maps.event.addListener(grid[x + " " + y], "click", infoWnd);
 				// save the grid value in order to be displayed on the info window
 				grid_value[x + " " + y] = ret[i+3];
+				update_grid[x + " " + y] = true;
+			}
+			for (i in grid)
+			{
+				if (! (i in update_grid) || ! update_grid[i])
+				{
+					google.maps.event.clearListeners(grid[i], "click");
+					grid[i].setMap(null);
+				}
 			}
 		}
 		window.setTimeout(calGrid, self.timeout);

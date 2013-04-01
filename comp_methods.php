@@ -5,6 +5,7 @@
  */
 // load APIs for Redis
 require __DIR__.'/predis/autoload.php';
+include __DIR__.'/robot.php';
 
 $LAB = array(49.276802, -122.914913);
 $HOST = "192.168.1.120";
@@ -205,7 +206,7 @@ function random_robot()
 	// the ground is 10 * 8
 	$x = rand(-5 * 100, 100 * 5) / 100;
 	$y = rand(-4 * 100, 100 * 4) / 100;
-	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." elect ".(rand(0, 1) ? "ELECTED" : "NOELECTED")." yaw ".rand(-M_PI * 100, 100 * M_PI) / 100;
+	return "frame ".round(rand(0, 100))." x ".$x." y ".$y." voltage ".(rand(0, 10000) / 100)." current ".(rand(0, 10000) / 100)." elect ".(rand(0, 1) ? "ELECTED" : "NOELECTED")." yaw ".(rand(-M_PI * 100, 100 * M_PI) / 100)." state ".(rand(0, 10));
 }
 // generate a string of data representing a robot with the following format: time x y voltage current, with constrained x and y representing a field robot moving out of the lab.
 function field_robot($client_value)
@@ -229,7 +230,7 @@ function setStaticGraphics()
 	global $client;
 	$client->del("staticgraphics");
 	//map
-	$client->rpush("staticgraphics", "image -5 -4 http://localhost/autolab-plot/resource/cave_compact.png 10 8");
+	$client->rpush("staticgraphics", "image -5 -4 http://192.168.1.116/autolab-plot/resource/cave_compact.png 10 8");
 	// home
 	$client->rpush("staticgraphics", "circle -4.5 -3.5 0.3 pen blue 1 0");
 	// text home
@@ -501,6 +502,11 @@ function getStaticGraphics()
 	{
 		echo $i.", ";
 	}
+}
+function runRobot()
+{
+	$sensor = getSensor($_GET["sensor"], $_GET["x"], $_GET["y"], $_GET["yaw"]);
+	pathPlan($sensor, $_GET["x"], $_GET["y"], $_GET["yaw"]);
 }
 // call corresponding method according to $method
 function callMethod($method)

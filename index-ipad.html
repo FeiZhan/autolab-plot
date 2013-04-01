@@ -51,7 +51,6 @@ google.maps.event.addDomListener(window, 'load', function ()
 		<div id="map_canvas" style="align:center;height:40%;width:100%;"></div>
 		<div id="trajGmap"></div>
 		<div id="trajPlot2" align="center"></div>
-		<br />
 		<div id="dynamicPlot" align="center"></div>
 		<div id="safeRange"></div>
 		<div id="safeRange2"></div>
@@ -74,7 +73,6 @@ var ll = new labLogo();
 ll.show();
 
 var rs = new redisServer();
-//rs.host = "localhost";
 rs.show();
 
 var rn = new robotName();
@@ -101,18 +99,18 @@ tp2.robot_data = rd;
 tp2.show();
 
 var sr = new safeRange();
-sr.width = "70%";
+sr.width = "80%";
 sr.robot_data = rd;
 sr.show();
 
 var sr2 = new safeRange();
-sr2.width = "70%"
+sr2.width = "80%"
 sr2.canvas = "safeRange2";
 sr2.robot_data = rd;
 sr2.show();
 
 var sr3 = new safeRange();
-sr3.width = "70%"
+sr3.width = "80%"
 sr3.canvas = "safeRange3";
 sr3.robot_data = rd;
 sr3.show();
@@ -125,7 +123,7 @@ dp.robot_data = rd;
 dp.show();
 
 var srb = new safeRange();
-srb.width = "70%"
+srb.width = "80%"
 srb.canvas = "safeRangeb";
 srb.robot_data = rd;
 srb.show();

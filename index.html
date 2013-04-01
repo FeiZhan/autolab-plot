@@ -48,12 +48,11 @@ google.maps.event.addDomListener(window, 'load', function ()
 	<body style="background-color:AliceBlue;">
 		<script src="js/bootstrap.min.js"></script>
 		<div id="labLogo"></div>
-		<div style="align:center;height:35%;width:50%;float:left;">
+		<div style="align:center;height:410px;width:60%;float:left;">
 			<div id="map_canvas" style="align:center;height:100%;width:100%;"></div>
 			<div id="trajGmap"></div>
 		</div>
 		<div id="trajPlot2" align="center"></div>
-		<br /><br />
 		<table summary="" border="0" align="center" width="100%">
 			<tr>
 				<td width="82%" align="center" valign="top">
@@ -82,7 +81,6 @@ var ll = new labLogo();
 ll.show();
 
 var rs = new redisServer();
-rs.host = "localhost";
 rs.show();
 
 var rn = new robotName();
@@ -109,18 +107,18 @@ tp2.php_comm.server = rs;
 tp2.show();
 
 var sr = new safeRange();
-sr.width = "70%";
+sr.width = "80%";
 sr.robot_data = rd;
 sr.show();
 
 var sr2 = new safeRange();
-sr2.width = "70%"
+sr2.width = "80%";
 sr2.canvas = "safeRange2";
 sr2.robot_data = rd;
 sr2.show();
 
 var sr3 = new safeRange();
-sr3.width = "70%"
+sr3.width = "80%";
 sr3.canvas = "safeRange3";
 sr3.robot_data = rd;
 sr3.show();
@@ -133,7 +131,7 @@ dp.robot_data = rd;
 dp.show();
 
 var srb = new safeRange();
-srb.width = "70%"
+srb.width = "80%";
 srb.canvas = "safeRangeb";
 srb.robot_data = rd;
 srb.show();
