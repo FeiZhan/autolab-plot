@@ -505,7 +505,7 @@ var redisServer = function ()
 						'<input class="span2" type="text" name="port" value="' + self.port + '" />' +
 					'</div>' +
 					'<div class="control-group input-prepend input-append">' +
-						'<input class="span2 btn btn-primary" type="button" value="ok" />' +
+						'<input class="btn btn-small btn-primary" type="button" value="ok" />' +
 					'</div>' +
 				'</form>';
 		document.getElementById(self.canvas).innerHTML = html;
@@ -1534,7 +1534,7 @@ var trajPlot2 = function ()
 	 * max points of a curve in the plot
 	 * @public
 	 */
-	this.total_points = 30;
+	this.total_points = 20;
 	/**
 	 * the timeout between two updates (ms)
 	 * @public
@@ -1814,7 +1814,11 @@ var trajPlot2 = function ()
 			//test1.draw(gr);
 			if (rn[i] in line)
 			{
-					line[rn[i]].pop();
+					while (line[rn[i]].length >= self.total_points)
+					{
+						line[rn[i]][0].remove();
+						line[rn[i]].shift();
+					}
 			} else
 			{
 				line[rn[i]] = new Array();
@@ -1832,7 +1836,7 @@ var trajPlot2 = function ()
 					color = STATE_COLOR[0];
 				}
 			}
-			line[rn[i]].push(new jxLine(new jxPoint(data[rn[i]][data[rn[i]].length - 2], data2[rn[i]][data2[rn[i]].length - 2]), new jxPoint(data[rn[i]][data[rn[i]].length - 1], data2[rn[i]][data2[rn[i]].length - 1]), new jxPen(new jxColor(color),'1px')));
+			line[rn[i]].push( new jxLine(new jxPoint(data[rn[i]][data[rn[i]].length - 2], data2[rn[i]][data2[rn[i]].length - 2]), new jxPoint(data[rn[i]][data[rn[i]].length - 1], data2[rn[i]][data2[rn[i]].length - 1]), new jxPen(new jxColor(color),'1px')) );
 			line[rn[i]][line[rn[i]].length - 1].draw(gr);
 		}
 		setTimeout(update, self.timeout);

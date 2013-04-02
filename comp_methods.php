@@ -179,10 +179,17 @@ function backup($key, $data)
 {
 	global $bak_client;
 	$old = $bak_client->lrange($key."-bak", -1, -1);
-	$time = round(microtime(true) * 1000);
-	// if change - with _, it does not work.
-	$bak_client->zadd($key."-sorted", $time, "servertime ".$time." ".$data);
-	$bak_client->rpush($key."-bak", "servertime ".$time." ".$data);
+	$old = explode(" ", $old[0]);
+	array_splice($old, 0, 2);
+	$old = implode(" ", $old);
+	// if data is the same as previous, do not save it
+	if ($old != $data)
+	{
+		$time = round(microtime(true) * 1000);
+		// if change - with _, it does not work.
+		$bak_client->zadd($key."-sorted", $time, "servertime ".$time." ".$data);
+		$bak_client->rpush($key."-bak", "servertime ".$time." ".$data);
+	}
 }
 // get robot data
 function getRobotData()
