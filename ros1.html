@@ -1,9 +1,14 @@
 <html>
 	<head>
+		<title>Dashboard for Autolab</title>
+		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
 		<script src="rosjs/dist/eventemitter2.js"></script>
 		<script src="rosjs/ros.js"></script>
+		<script type="text/javascript" src="rosplot.js"></script>
+		<script src="plot_methods.js"></script>
 	</head>
 	<body>
+		<div id="labLogo"></div>
 		<h1>ros.js example</h1>
 		<p>
 			Run the following commands in the terminal then refresh this page. Check the
@@ -34,6 +39,8 @@
 				<textarea name="topicMsg"></textarea>
 				<button onclick="publishTopic()">Publish Topic</button>
 				<button onclick="subscribeTopic()">Subscribe Topic</button>
+				<button name="publishCpp">Publish Topic via C++</button>
+				<button name="subscribeCpp">Subscribe Topic via C++</button>
 				<br />
 				<button onclick="callService()">call service</button>
 				<button onclick="setParam()">set parameter</button>
@@ -45,9 +52,17 @@
 			<legend>Message Log<button onclick="clearLog()">Clear</button></legend>
 			<div name="msgLog"></div>
 		</fieldset>
-		<script type="text/javascript" src="rosplot.js"></script>
+		<p id="debug">debug: </p>
+		<p id="send">send: </p>
+		<p id="receive">receive: </p>
 		<script type="text/javascript">
+var ll = new labLogo();
+ll.show();
+
 initRos();
+
+var rc = new rosComm();
+rc.show();
 		</script>
 	</body>
 </html>

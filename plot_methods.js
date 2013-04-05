@@ -429,7 +429,6 @@ var labLogo = function ()
 						'<td><p class="text-center"><a href="./index.html" target="_blank">Index</a></p></td>' +
 						'<td><p class="text-center"><a href="./index-ipad.html" target="_blank">Index-ipad</a></p></td>' +
 						'<td><p class="text-center"><a href="./debugger.html" target="_blank">Debugger</a></p></td>' +
-						'<td><p class="text-center"><a href="./example.html" target="_blank">Example</a></p></td>' +
 						'<td><p class="text-center"><a href="./gmap.html" target="_blank">Google Map</a></p></td>' +
 						'<td><p class="text-center"><a href="./status.html" target="_blank">Status</a></p></td>' +
 						'<td><p class="text-center"><a href="./traj1.html" target="_blank">Trajectory Plot 1</a></p></td>' +
@@ -438,6 +437,7 @@ var labLogo = function ()
 						'<td><p class="text-center"><a href="./static.html" target="_blank">Static Plot</a></p></td>' +
 						'<td><p class="text-center"><a href="./dataparser/index.html" target="_blank">Data Parser</a></p></td>' +
 						'<td><p class="text-center"><a href="./test.html" target="_blank">Test</a></p></td>' +
+						'<td><p class="text-center"><a href="./ros1.html" target="_blank">rosjs</a></p></td>' +
 					'</tr>' +
 				'</table>';
 		}
@@ -2972,5 +2972,60 @@ var trajGmap = function ()
 			self.robot_data.update();
 		}
 		update();
+	}
+}
+var rosComm = function ()
+{
+	this.timeout = 100;
+	this.pub_php_comm = new phpComm();
+	this.sub_php_comm = new phpComm();
+	var self = this;
+	var publish = function ()
+	{
+		var name_value = document.getElementsByName("topicName")[0].value;
+		var type_value = document.getElementsByName("topicType")[0].value;
+		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
+		{
+			putLog("Invalid name or type");
+			return;
+		}
+		var msg_content = document.getElementsByName("topicMsg")[0].value;
+		putLog("publishing via C++");
+		self.pub_php_comm.cmd = "method=publishCpp&name=" + name_value + "&msg=" + msg_content;
+		self.pub_php_comm.commPhp();
+		putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")");
+	}
+	var last_rec = "";
+	var updateSub = function ()
+	{
+		if (last_rec != sub_php_comm.receive)
+		{
+			putLog("Received message: " + sub_php_comm.receive, "log");
+			last_rec = sub_php_comm.receive;
+			return;
+		} else
+		{
+			setTimeout(updateSub, self.timeout);
+		}
+	}
+	var subscribe = function ()
+	{
+		var name_value = document.getElementsByName("topicName")[0].value;
+		var type_value = document.getElementsByName("topicType")[0].value;
+		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
+		{
+			putLog("Invalid name or type");
+			return;
+		}
+		putLog("subscribing via C++");
+		self.sub_php_comm.cmd = "method=subscribeCpp&name=" + name_value;
+		self.sub_php_comm.commPhp();
+		updateSub();
+		putLog("subscribed via C++");
+	}
+	this.show = function ()
+	{
+		document.getElementsByName("publishCpp")[0].onclick = publish;
+		document.getElementsByName("subscribeCpp")[0].onclick = subscribe;
 	}
 }

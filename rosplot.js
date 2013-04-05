@@ -57,6 +57,7 @@ var publishTopic = function ()
 	if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
 	{
 		putLog("Invalid name or type", "system");
+		return;
 	}
 	var msg_content = document.getElementsByName("topicMsg")[0].value;
 	var topic = new ros.Topic({
@@ -74,7 +75,8 @@ var subscribeTopic = function ()
 	var type_value = document.getElementsByName("topicType")[0].value;
 	if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
 	{
-		putLog("Invalid name or type", "system");
+		putLog("Invalid name or type");
+		return;
 	}
 	var topic = new ros.Topic({
 		name        : name_value,

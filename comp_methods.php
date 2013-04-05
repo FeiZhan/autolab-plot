@@ -521,6 +521,34 @@ function runRobot()
 	$sensor = getSensor($_GET["sensor"], $_GET["x"], $_GET["y"], $_GET["yaw"]);
 	pathPlan($sensor, $_GET["x"], $_GET["y"], $_GET["yaw"]);
 }
+function publishCpp()
+{
+	if (exec('./ros/talker '.$_GET["name"]." ".$_GET["msg"], $output, $ret))
+	{
+		echo "Fail to exec. ";
+		var_dump($output);
+		var_dump($ret);
+	} else
+	{
+		echo '(./ros/talker '.$_GET["name"]." ".$_GET["msg"].") ";
+		var_dump($output);
+		var_dump($ret);
+	}
+}
+function subscribeCpp()
+{
+	if (exec('./ros/listener '.$_GET["name"]." &", $output, $ret))
+	{
+		echo "Fail to exec. ";
+		var_dump($output);
+		var_dump($ret);
+	} else
+	{
+		echo '(./ros/listener '.$_GET["name"].") ";
+		var_dump($output);
+		var_dump($ret);
+	}
+}
 // call corresponding method according to $method
 function callMethod($method)
 {
