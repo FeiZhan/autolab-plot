@@ -23,21 +23,22 @@
 				host<input type="text" name="host" value="gonk" />
 				port<input type="text" name="port" value="9090" />
 				<button onclick="connectRos()">Open</button>
-				<button onclick="closeCon()">Close</button>
-				<button onclick="getServerInfo()">Server Info</button>
+				<button onclick="closeRos()">Close</button>
 			</div>
 		</fieldset>
 		<fieldset>
 			<legend>Request</legend>
 			<div>
-				name<input type="text" name="topicName" value="/robot_pose" />
-				messageType<input type="text" name="topicType" value="geometry_msgs/PoseStamped" />
-				<textarea name="sendTopic"></textarea>
+				name<input type="text" name="topicName" value="/listener" />
+				messageType<input type="text" name="topicType" value="std_msgs/String" />
+				<textarea name="topicMsg"></textarea>
 				<button onclick="publishTopic()">Publish Topic</button>
 				<button onclick="subscribeTopic()">Subscribe Topic</button>
+				<br />
 				<button onclick="callService()">call service</button>
 				<button onclick="setParam()">set parameter</button>
 				<button onclick="getParam()">get parameter</button>
+				<button onclick="getServerInfo()">get server info</button>
 			</div>
 		</fieldset>
 		<fieldset>

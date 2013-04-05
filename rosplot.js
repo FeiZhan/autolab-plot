@@ -14,6 +14,11 @@ var clearLog = function ()
 	putLog("Clearing log", "system");
 	document.getElementsByName("msgLog")[0].innerHTML = "";
 }
+var closeRos = function ()
+{
+	ros.close();
+	putLog("Closed connection", "system");
+}
 var initRos = function ()
 {
 	putLog("Initializing rosjs", "system");
@@ -32,7 +37,6 @@ var connectRos = function()
 {
 	var host = document.getElementsByName("host")[0].value;
 	var port = document.getElementsByName("port")[0].value;
-	putLog("Connecting " + host + ":" + port, "system");
 	if (typeof host == "undefined" || null == host || "" == host || typeof port == "undefined" || null == port || "" == port)
 	{
 		putLog("Invalid server", "system");
@@ -54,37 +58,15 @@ var publishTopic = function ()
 	{
 		putLog("Invalid name or type", "system");
 	}
-	putLog("Publishing topic", "system");
+	var msg_content = document.getElementsByName("topicMsg")[0].value;
 	var topic = new ros.Topic({
-	  name        : name_value
-	, messageType : type_value
+		name        : name_value,
+		messageType : type_value
 	});
-	putLog("Created topic", "system");
 	// Then we create the payload to be published. The object we pass in to ros.Message matches the fields defined in the geometry_msgs/PoseStamped.msg definition.
-	var msg = new ros.Message({
-		//@todo need to be generic
-	  header: {
-		seq      : 0,
-		stamp    : 0,
-		frame_id : ''
-	  },
-	  pose: {
-		position: {
-		  x : 36,
-		  y : 42,
-		  z : 0
-		},
-		orientation: {
-		  x : 0,
-		  y : 0,
-		  z : 0,
-		  w : 0
-		}
-	  }
-	});
-	putLog("Created message", "system");
+	var msg = new ros.Message({data: msg_content});
 	topic.publish(msg);
-	putLog("Published topic", "system");
+	putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
 }
 var subscribeTopic = function ()
 {
@@ -94,19 +76,17 @@ var subscribeTopic = function ()
 	{
 		putLog("Invalid name or type", "system");
 	}
-	putLog("Subscribing topic", "system");
 	var topic = new ros.Topic({
-		name        : '/listener',
-		messageType : 'std_msgs/String'
+		name        : name_value,
+		messageType : type_value
 	});
-	putLog("Created topic", "system");
 	// Then we add a callback to be called every time a message is published on this topic.
 	topic.subscribe(function (message)
 	{
 		putLog('Received message on ' + topic.name + ': ' + message.data, "log");
 		topic.unsubscribe();
 	});
-	putLog("Subscribed topic", "system");
+	putLog("Subscribed topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
 }
 var callService = function ()
 {
@@ -126,7 +106,6 @@ var callService = function ()
 }
 var setParam = function ()
 {
-	putLog("Setting parameter", "system");
 	ros.getParams(function (params)
 	{
 		putLog(params, "log");
@@ -142,7 +121,6 @@ var setParam = function ()
 }
 var getParam = function ()
 {
-	putLog("Getting parameter", "system");
 	var param = new ros.Param({
 	  name: 'favorite_color'
 	});
@@ -150,5 +128,22 @@ var getParam = function ()
 	param.get(function (value)
 	{
 		putLog('My robot\'s favorite color is ' + value, "log");
+	});
+}
+var getServerInfo = function ()
+{
+	// Retrieves the current list of topics in ROS.
+	ros.getTopics(function(topics) {
+	  putLog('Current topics in ROS: ' + topics);
+	});
+
+	// Fetches list of all active services in ROS.
+	ros.getServices(function(services) {
+	  putLog('Current services in ROS: ' + services);
+	});
+
+	// Gets list of all param names.
+	ros.getParams(function(params) {
+	  putLog('Current params in ROS: ' + params);
 	});
 }
