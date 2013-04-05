@@ -1,0 +1,52 @@
+<html>
+	<head>
+		<script src="rosjs/dist/eventemitter2.js"></script>
+		<script src="rosjs/ros.js"></script>
+	</head>
+	<body>
+		<h1>ros.js example</h1>
+		<p>
+			Run the following commands in the terminal then refresh this page. Check the
+			JavaScript console for the output.
+		</p>
+		<ol>
+			<li>roscore</li>
+			<li>rostopic pub /listener std_msgs/String "howdy"</li>
+			<li>rostopic echo /cmd_vel</li>
+			<li>rosrun rospy_tutorials add_two_ints_server</li>
+			<li>rosrun rosapi rosapi.py</li>
+			<li>rosrun rosbridge_server rosbridge.py</li>
+		</ol>
+		<fieldset>
+			<legend>Server Location</legend>
+			<div>
+				host<input type="text" name="host" value="gonk" />
+				port<input type="text" name="port" value="9090" />
+				<button onclick="connectRos()">Open</button>
+				<button onclick="closeCon()">Close</button>
+				<button onclick="getServerInfo()">Server Info</button>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Request</legend>
+			<div>
+				name<input type="text" name="topicName" value="/robot_pose" />
+				messageType<input type="text" name="topicType" value="geometry_msgs/PoseStamped" />
+				<textarea name="sendTopic"></textarea>
+				<button onclick="publishTopic()">Publish Topic</button>
+				<button onclick="subscribeTopic()">Subscribe Topic</button>
+				<button onclick="callService()">call service</button>
+				<button onclick="setParam()">set parameter</button>
+				<button onclick="getParam()">get parameter</button>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Message Log<button onclick="clearLog()">Clear</button></legend>
+			<div name="msgLog"></div>
+		</fieldset>
+		<script type="text/javascript" src="rosplot.js"></script>
+		<script type="text/javascript">
+initRos();
+		</script>
+	</body>
+</html>

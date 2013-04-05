@@ -178,10 +178,16 @@ function timeTravel()
 function backup($key, $data)
 {
 	global $bak_client;
-	$old = $bak_client->lrange($key."-bak", -1, -1);
-	$old = explode(" ", $old[0]);
-	array_splice($old, 0, 2);
-	$old = implode(" ", $old);
+	if ($bak_client->llen($key."-bak") > 0)
+	{
+		$old = $bak_client->lrange($key."-bak", -1, -1);
+		$old = explode(" ", $old[0]);
+		array_splice($old, 0, 2);
+		$old = implode(" ", $old);
+	} else
+	{
+		$old = "";
+	}
 	// if data is the same as previous, do not save it
 	if ($old != $data)
 	{
