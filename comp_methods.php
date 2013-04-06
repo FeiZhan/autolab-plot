@@ -368,6 +368,139 @@ function calEnergy()
 		echo " ";
 	}
 }
+function calTraj2Grid()
+{
+	global $client;
+	$names = returnNames();
+	// obtain old data from Redis
+	switch($_GET["type"])
+	{
+	case "energy":
+		$last_frame = explode(" ", $client->get("last_traj2_energy_frame"));
+		$last_color = explode(" ", $client->get("last_traj2_energy_color"));
+		$last = explode(" ", $client->get("last_traj2_energy"));
+		break;
+	case "time":
+		$last_frame = explode(" ", $client->get("last_traj2_time_frame"));
+		$last_color = explode(" ", $client->get("last_traj2_time_color"));
+		$last = explode(" ", $client->get("last_traj2_time"));
+		break;
+	default:
+		$last_frame = "";
+		$last_color = "";
+		$last = "";
+	}
+	// generate a map for old data
+	$map = array();
+	for($i = 0; $i + 2 < count($last); $i += 3)
+	{
+		$map[$last[$i]." ".$last[$i+1]] = floatval($last[$i+2]);
+	}
+	//@todo generate an array of old colors in order to compare with current colors
+	$old_color = array();
+	for($i = 0; $i + 2 < count($last_color); $i += 3)
+	{
+		$old_color[$last_color[$i]." ".$last_color[$i+1]] = floatval($last_color[$i+2]);
+	}
+	for ($i = 0; $i < count($names); ++ $i)
+	{
+		//obtain robot data from Redis
+		$r = explode(" ", $client->get($names[$i]));
+		$now = intval($r[1]);
+		if (count($last_frame) < count($names) || $last_frame[$i] >= $now)
+		{
+			// there is no data, or the robot did not move
+			$last_frame[$i] = $now;
+			continue;
+		}
+		// get the grid position from the geo position
+		$x = round(floatval($r[3]));
+		$y = round(floatval($r[5]));
+		// calculate the value of energy or time
+		switch($_GET["type"])
+		{
+		case "energy":
+			$value = floatval($r[7]) * floatval($r[9]) * ($now - $last_frame[$i]);
+			break;
+		case "time":
+			$value = $now - $last_frame[$i];
+			break;
+		default:
+			$value = 0;
+		}
+		// add with old data if there exist old data
+		if (array_key_exists($x." ".$y, $map))
+		{
+			$map[$x." ".$y] += $value;
+		} else
+		{
+			$map[$x." ".$y] = $value;
+		}
+		$last_frame[$i] = $now;
+	}
+	// save frame data back to Redis
+	switch($_GET["type"])
+	{
+	case "energy":
+		$client->set("last_traj2_energy_frame", implode(" ", $last_frame));
+		break;
+	case "time":
+		$client->set("last_traj2_time_frame", implode(" ", $last_frame));
+		break;
+	default:
+	}
+	$sum = array_sum($map);
+	$last = "";
+	$centerx = intval($_GET["centerx"]);
+	$centery = intval($_GET["centery"]);
+	foreach ($map as $key => $i)
+	{
+		$last .= $key." ".$i." ";
+		$pos = explode(" ", $key);
+		$x = intval($pos[0]);
+		$y = intval($pos[1]);
+		// calculate the color value of the grid
+		$tmp = $i / $sum;
+		if ($tmp < 0.001)
+		{
+			$color = 230;
+		}
+		else if ($tmp > 0.1)
+		{
+			$color = 50;
+		} else
+		{
+			$color = round(230 + ($tmp - 0.001) / (0.1 - 0.001) * (50 - 230));
+		}
+		//@todo if the color does not change, we do not need to transmit it
+		if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
+		{
+			$old_color[$key] = $color;
+		}
+		echo $key." ".$color." ".$i." ";
+	}
+	// save back to Redis
+	switch($_GET["type"])
+	{
+	case "energy":
+		$client->set("last_traj2_energy", $last);
+		$client->set("last_traj2_energy_color", $old_color);
+		break;
+	case "time":
+		$client->set("last_traj2_time", $last);
+		$client->set("last_traj2_time_color", $old_color);
+		break;
+	default:
+	}
+}
+function clearTraj2Grids()
+{
+	global $client;
+	$client->set("last_traj2_energy", "");
+	$client->set("last_traj2_energy_frame", "");
+	$client->set("last_traj2_time", "");
+	$client->set("last_traj2_time_frame", "");
+}
 // calculate energy or time grids for google maps
 function calGrid()
 {
@@ -478,7 +611,7 @@ function calGrid()
 		{
 			$color = round(230 + ($tmp - 0.001) / (0.1 - 0.001) * (50 - 230));
 		}
-		//[todo] if the color does not change, we do not need to transmit it
+		//@todo if the color does not change, we do not need to transmit it
 		if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
 		{
 			$old_color[$key] = $color;

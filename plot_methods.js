@@ -1557,7 +1557,7 @@ var trajPlot2 = function ()
 	 */
 	this.debug = "debug";
 	var view_type = "basic", follow, gr, test1;
-	var data = new Object(), data2 = new Object(), yaw = new Object(), body = new Object(), dir = new Object(), line = new Object();
+	var data = new Object(), data2 = new Object(), yaw = new Object(), body = new Object(), dir = new Object(), line = new Object(), grid;
 	var self = this;
 	/**
 	 * combine data into position data
@@ -1769,14 +1769,54 @@ var trajPlot2 = function ()
 	var plotStatic = function ()
 	{
 		// draw the static graphics by jsDraw2DX
-		var grid = new jxRect(new jxPoint(330, 200), 50, 50, new jxPen(new jxColor("pink"),'1px'), new jxBrush(new jxColor("pink")));
-		//grid.draw(gr);
 		var home = new jxCircle(new jxPoint(30, 30), 20, new jxPen(new jxColor("blue"),'1px'));
 		home.draw(gr);
 		var patch1 = new jxCircle(new jxPoint(self.width - 30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
 		var patch1 = new jxCircle(new jxPoint(30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
+	}
+	var clearGrids = function ()
+	{
+		self.php_comm.cmd = "method=clearTraj2Grids";
+		self.php_comm.commPhp();
+		if (typeof grid == "undefined" || null == grid)
+		{
+			grid = new Array();
+		}
+		for (i in grid)
+		{
+			for (j in grid[i])
+			{
+				grid[i][j].remove();
+			}
+			grid[i] = new Array();
+		}
+	}
+	var calGrid = function ()
+	{
+		self.php_comm.cmd = "method=calTraj2Grids&width=" + self.width + "&height=" + self.height;
+		self.php_comm.commPhp();
+		clearGrids();
+		var GRID_SIZE = 10;
+		self.php_comm.cmd = "method=calTraj2Grids";
+		self.php_comm.commPhp();
+		if (null == self.php_comm.receive || "" == self.php_comm.receive)
+		{
+			return;
+		}
+		var rec = self.php_comm.receive.split(" ");
+		// the format of the data is "x y color value"
+		for (var i = 0; i + 3 < rec.length; i += 3)
+		{
+			var x = parseInt(rec[i]), y = parseInt(rec[i + 1]);
+			if (typeof x == "undefined" || null == x || typeof y == "undefined" || null == y)
+			{
+				continue;
+			}
+			grid[x][y] = new jxRect(new jxPoint(x * self.width / GRID_SIZE, y * self.width / GRID_SIZE), GRID_SIZE, GRID_SIZE, new jxPen(new jxColor("pink"), '1px'), new jxBrush(new jxColor("pink")));
+			grid[x][y].draw(gr);
+		}
 	}
 	/**
 	 * plot periodically
@@ -1838,6 +1878,10 @@ var trajPlot2 = function ()
 			}
 			line[rn[i]].push( new jxLine(new jxPoint(data[rn[i]][data[rn[i]].length - 2], data2[rn[i]][data2[rn[i]].length - 2]), new jxPoint(data[rn[i]][data[rn[i]].length - 1], data2[rn[i]][data2[rn[i]].length - 1]), new jxPen(new jxColor(color),'1px')) );
 			line[rn[i]][line[rn[i]].length - 1].draw(gr);
+			if ("energy" == view_type || "time" == view_type)
+			{
+				calGrid();
+			}
 		}
 		setTimeout(update, self.timeout);
 	};
@@ -1866,6 +1910,11 @@ var trajPlot2 = function ()
 				'</form>' +
 			'</div>';
 		document.getElementById(self.canvas).innerHTML = html;
+		// add callback to clear grids button
+		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = function ()
+		{
+			clearGrids();
+		}
 		var select = document.getElementById(self.canvas).getElementsByTagName("select");
 		// add callback to view select
 		select[0].onclick = function ()
