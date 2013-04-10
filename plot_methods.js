@@ -1060,7 +1060,6 @@ document.getElementById("debug").innerHTML = "debug: " + dataset[dataset.length 
 						self.option.xaxis.mode = "time";
 					} else
 					{
-//document.getElementById("debug").innerHTML += xaxis_tmp + " ";
 						self.option.xaxis.mode = undefined;
 					}
 					var dataset_order = 0;
@@ -1301,7 +1300,6 @@ var timeTravel = function ()
 		var tmp = parseFloat(rec[0]);
 		if (tmp > nexttime)
 		{
-//document.getElementById("debug").innerHTML += "<p>" + self.php_comm.receive + "</p>";
 			nexttime = tmp;
 			var tmp = parseFloat(rec[1]);
 			if (tmp < 10000 && tmp > 1)
@@ -3023,7 +3021,7 @@ var trajGmap = function ()
 		update();
 	}
 }
-var rosComm = function ()
+var rosCommCpp = function ()
 {
 	this.timeout = 100;
 	this.pub_php_comm = new phpComm();
@@ -3076,5 +3074,259 @@ var rosComm = function ()
 	{
 		document.getElementsByName("publishCpp")[0].onclick = publish;
 		document.getElementsByName("subscribeCpp")[0].onclick = subscribe;
+	}
+}
+var rosComm = function ()
+{
+	this.canvas = "rosComm";
+	this.need_instruction = true;
+	this.publish_num = 1;
+	this.subscribe_str_num = 4;
+	this.subscribe_value_num = 4;
+	this.msg_log = true;
+	var ros = null;
+	var self = this;
+	this.putLog = function (msg, type)
+	{
+		if (typeof type == "undefined")
+		{
+			type = "system";
+		}
+		document.getElementsByName("msgLog")[0].innerHTML +=
+			'[' + type + '] ' + msg +
+			'<br />';
+	}
+	this.clearLog = function ()
+	{
+		self.putLog("Clearing log");
+		document.getElementsByName("msgLog")[0].innerHTML = "";
+	}
+	this.closeRos = function ()
+	{
+		if (null == ros)
+		{
+			putLog("Already closed");
+		}
+		ros.close();
+		putLog("Closed connection");
+	}
+	this.initRos = function ()
+	{
+		self.putLog("Initializing rosjs");
+		if (null != ros)
+		{
+			self.closeRos();
+		}
+		ros = new ROS();
+		if (typeof ros == "undefined" || null == ros)
+		{
+			self.putLog("Fail to initialize rosjs", "system");
+		}
+		self.putLog("Initialized rosjs", "system");
+		// If there is an error on the backend, an 'error' emit will be emitted.
+		ros.on('error', function(error) {
+			self.putLog("Error from rosjs: " + error, "system");
+		});
+	}
+	this.connectRos = function(host, port)
+	{
+		if (typeof host == "undefined" || null == host || "" == host || typeof port == "undefined" || null == port || "" == port)
+		{
+			self.putLog("Invalid server");
+			return;
+		}
+		try {
+			ros.connect('ws://' + host + ':' + port);
+		} catch (err) {
+			self.putLog("Fail to connect " + 'ws://' + host + ':' + port + " error: " + err);
+			return;
+		}
+		self.putLog("Connected " + 'ws://' + host + ':' + port);
+	}
+	this.publishTopic = function ()
+	{
+		var name_value = document.getElementsByName("topicName")[0].value;
+		var type_value = document.getElementsByName("topicType")[0].value;
+		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
+		{
+			putLog("Invalid name or type", "system");
+			return;
+		}
+		var msg_content = document.getElementsByName("topicMsg")[0].value;
+		var topic = new ros.Topic({
+			name        : name_value,
+			messageType : type_value
+		});
+		// Then we create the payload to be published. The object we pass in to ros.Message matches the fields defined in the geometry_msgs/PoseStamped.msg definition.
+		var msg = new ros.Message({data: msg_content});
+		topic.publish(msg);
+		putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
+	}
+	this.subscribeTopic = function (name_value, type_value, content, ret_type, below, above)
+	{
+		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
+		{
+			putLog("Invalid name or type");
+			return;
+		}
+		if (null == ros)
+		{
+			self.putLog("Fail to subscribe: ROS is not available.");
+			return;
+		}
+		var topic = new ros.Topic({
+			name        : name_value,
+			messageType : type_value
+		});
+		// Then we add a callback to be called every time a message is published on this topic.
+		topic.subscribe(function (message)
+		{
+			self.putLog('Received message on ' + topic.name + ': ' + message.data, "log");
+			if (ret_type != "string")
+			{
+				if (! isNaN(parseFloat(message.data)) && isFinite(n))
+				{
+					var num = parseFloat(message.data);
+					if (num < below || num > above)
+					{
+						content.style.color = "red";
+					} else
+					{
+						content.style.color = "black";
+					}
+					content.value = num;
+				} else
+				{
+					content.value = NaN;
+				}
+			} else
+			{
+				content.value = message.data;
+			}
+			topic.unsubscribe();
+		});
+		self.putLog("Subscribed topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
+	}
+	this.getServerInfo = function ()
+	{
+		// Retrieves the current list of topics in ROS.
+		ros.getTopics(function(topics) {
+		  putLog('Current topics in ROS: ' + topics);
+		});
+
+		// Fetches list of all active services in ROS.
+		ros.getServices(function(services) {
+		  putLog('Current services in ROS: ' + services);
+		});
+
+		// Gets list of all param names.
+		ros.getParams(function(params) {
+		  putLog('Current params in ROS: ' + params);
+		});
+	}
+	this.show = function ()
+	{
+		var html = "";
+		if (self.need_instruction)
+		{
+			html +=
+				'<ol>' +
+					'<li>roscore</li>' +
+					'<li>rostopic pub /listener std_msgs/String "howdy"</li>' +
+					'<li>rostopic echo /cmd_vel</li>' +
+					'<li>rosrun rospy_tutorials add_two_ints_server</li>' +
+					'<li>rosrun rosapi rosapi.py</li>' +
+					'<li>rosrun rosbridge_server rosbridge.py</li>' +
+				'</ol>';
+		}
+		html +=
+				'host<input type="text" name="host" value="gonk" />' +
+				'port<input type="text" name="port" value="9090" />' +
+				'<button>Open</button>' +
+				'<button>Close</button>' +
+				'<button onclick="callService()">call service</button>' +
+				'<button onclick="setParam()">set parameter</button>' +
+				'<button onclick="getParam()">get parameter</button>' +
+				'<button onclick="getServerInfo()">get server info</button>' +
+				'<button name="publishCpp">Publish Topic via C++</button>' +
+				'<button name="subscribeCpp">Subscribe Topic via C++</button>' +
+				'<button name="">Add String Subscription</button>' +
+				'<button name="">Add data Subscription</button>';
+		for (var i = 0; i < self.publish_num; ++ i)
+		{
+			html +=
+				'<form align="center">' +
+					'name<input type="text" name="topicName" value="" />' +
+					'messageType<input type="text" name="topicType" value="" />' +
+					'<input type="text" name="topicContent" value="" />' +
+					'<input type="button" name="publishTopic" value="Publish Topic" />' +
+				'</form>';
+		}
+		for (var i = 0; i < self.subscribe_str_num; ++ i)
+		{
+			html +=
+				'<form align="center">' +
+					'name<input type="text" name="topicName" value="" />' +
+					'messageType<input type="text" name="topicType" value="" />' +
+					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
+					'<input type="text" name="topicContent" value="null" />' +
+				'</form>';
+		}
+		for (var i = 0; i < self.subscribe_value_num; ++ i)
+		{
+			html +=
+				'<form align="center">' +
+					'name<input type="text" name="topicName" value="" />' +
+					'messageType<input type="text" name="topicType" value="" />' +
+					'safe-range<input type="text" name="saferangebelow" value="0" />' +
+					'<input type="text" name="saferangeabove" value="100" />' +
+					'<button name="subValTopic">Subscribe Topic</button>' +
+					'<input type="text" name="topicContent" value="NaN" />' +
+				'</form>';
+		}
+		if (self.msg_log)
+		{
+			html +=
+				'<fieldset>' +
+					'<legend>Message Log<button name="clearLog">Clear</button></legend>' +
+					'<div name="msgLog"></div>' +
+				'</fieldset>';
+		}
+		document.getElementById(self.canvas).innerHTML = html;
+		var button_list = document.getElementById(self.canvas).getElementsByTagName("button");
+		// callback of open
+		button_list[0].onclick = function ()
+		{
+			self.connectRos(document.getElementsByName("host")[0].value, document.getElementsByName("port")[0].value);
+		}
+		// callback of close
+		button_list[1].onclick = self.closeRos;
+		// callbacks of substribe string
+		var subs_str_list = document.getElementsByName("subStrTopic");
+		for (var i = 0; i < subs_str_list.length; ++ i)
+		{
+			subs_str_list[i].onclick = function ()
+			{
+				self.subscribeTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent, "string");
+			}
+		}
+		// callbacks of substribe value
+		var subs_val_list = document.getElementsByName("subValTopic");
+		for (var i = 0; i < subs_val_list.length; ++ i)
+		{
+			subs_val_list[i].onclick = function ()
+			{
+				self.subscribeTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent, "value", this.form.saferangebelow.value, this.form.saferangeabove.value);
+			}
+		}
+		var clear_log_list = document.getElementsByName("clearLog");
+		if (clear_log_list.length > 0)
+		{
+			clear_log_list[0].onclick = function ()
+			{
+				self.clearLog(document.getElementsByName("msgLog")[0]);
+			}
+		}
+		self.initRos();
 	}
 }
