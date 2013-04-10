@@ -3177,7 +3177,12 @@ var rosComm = function ()
 		// Then we add a callback to be called every time a message is published on this topic.
 		topic.subscribe(function (message)
 		{
-			self.putLog('Received message on ' + topic.name + ': ' + message.data, "log");
+			var msg_tmp = "";
+			for (i in message)
+			{
+				msg_tmp += i + ": " + message[i] + " ";
+			}
+			self.putLog("Received msg: " + msg_tmp, "log");
 			if (ret_type != "string")
 			{
 				if (! isNaN(parseFloat(message.data)) && isFinite(message.data))
@@ -3199,11 +3204,11 @@ var rosComm = function ()
 				}
 			} else
 			{
-				content.value = message.data;
+				content.value = msg_tmp;
 			}
 			topic.unsubscribe();
 		});
-		self.putLog("Subscribed topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
+		self.putLog("Subscribed topic");
 	}
 	this.getServerInfo = function ()
 	{
