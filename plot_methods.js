@@ -3105,10 +3105,10 @@ var rosComm = function ()
 	{
 		if (null == ros)
 		{
-			putLog("Already closed");
+			self.putLog("Already closed");
 		}
 		ros.close();
-		putLog("Closed connection");
+		self.putLog("Closed connection");
 	}
 	this.initRos = function ()
 	{
@@ -3166,33 +3166,31 @@ var rosComm = function ()
 	{
 		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
 		{
-			putLog("Invalid name or type");
-			return;
-		}
-		if (null == ros)
-		{
-			self.putLog("Fail to subscribe: ROS is not available.");
+			self.putLog("Invalid name or type");
 			return;
 		}
 		var topic = new ros.Topic({
 			name        : name_value,
 			messageType : type_value
 		});
+		self.putLog("Subscribing topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
 		// Then we add a callback to be called every time a message is published on this topic.
 		topic.subscribe(function (message)
 		{
 			self.putLog('Received message on ' + topic.name + ': ' + message.data, "log");
 			if (ret_type != "string")
 			{
-				if (! isNaN(parseFloat(message.data)) && isFinite(n))
+				if (! isNaN(parseFloat(message.data)) && isFinite(message.data))
 				{
 					var num = parseFloat(message.data);
 					if (num < below || num > above)
 					{
-						content.style.color = "red";
+						content.style.color = "white";
+						content.style.backgroundColor = "red";
 					} else
 					{
 						content.style.color = "black";
+						content.style.backgroundColor = "transparent";
 					}
 					content.value = num;
 				} else
@@ -3257,7 +3255,7 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="" />' +
-					'messageType<input type="text" name="topicType" value="" />' +
+					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
 					'<input type="text" name="topicContent" value="" />' +
 					'<input type="button" name="publishTopic" value="Publish Topic" />' +
 				'</form>';
@@ -3266,22 +3264,22 @@ var rosComm = function ()
 		{
 			html +=
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="" />' +
-					'messageType<input type="text" name="topicType" value="" />' +
+					'name<input type="text" name="topicName" value="/listener" />' +
+					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
 					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
-					'<input type="text" name="topicContent" value="null" />' +
+					'<input type="text" name="topicContent" value="" />' +
 				'</form>';
 		}
 		for (var i = 0; i < self.subscribe_value_num; ++ i)
 		{
 			html +=
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="" />' +
-					'messageType<input type="text" name="topicType" value="" />' +
+					'name<input type="text" name="topicName" value="/listener" />' +
+					'messageType<input type="text" name="topicType" value="std_msgs/Float32" />' +
 					'safe-range<input type="text" name="saferangebelow" value="0" />' +
 					'<input type="text" name="saferangeabove" value="100" />' +
-					'<button name="subValTopic">Subscribe Topic</button>' +
-					'<input type="text" name="topicContent" value="NaN" />' +
+					'<input type="button" name="subValTopic" value="Subscribe Topic" />' +
+					'<input type="text" name="topicContent" value="" />' +
 				'</form>';
 		}
 		if (self.msg_log)
