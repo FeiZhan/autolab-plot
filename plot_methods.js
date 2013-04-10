@@ -3265,6 +3265,48 @@ var rosComm = function ()
 		  self.putLog('Current params in ROS: ' + params, "log");
 		});
 	}
+	var AddStrSub = function ()
+	{
+		var html =
+				'<form align="center">' +
+					'name<input type="text" name="topicName" value="/listener" />' +
+					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
+					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
+					'<input type="text" name="topicContent" value="" />' +
+				'</form>';
+		document.getElementsByName("apilist")[0].innerHTML += html;
+		// callbacks of substribe string
+		var subs_str_list = document.getElementsByName("subStrTopic");
+		for (var i = 0; i < subs_str_list.length; ++ i)
+		{
+			subs_str_list[i].onclick = function ()
+			{
+				self.subscribeTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent, "string");
+			}
+		}
+	}
+	var AddValSub = function ()
+	{
+		var html =
+				'<form align="center">' +
+					'name<input type="text" name="topicName" value="/listener" />' +
+					'messageType<input type="text" name="topicType" value="std_msgs/Float32" />' +
+					'safe-range<input type="text" name="saferangebelow" value="0" />' +
+					'<input type="text" name="saferangeabove" value="100" />' +
+					'<input type="button" name="subValTopic" value="Subscribe Topic" />' +
+					'<input type="text" name="topicContent" value="" />' +
+				'</form>';
+		document.getElementsByName("apilist")[0].innerHTML += html;
+		// callbacks of substribe value
+		var subs_val_list = document.getElementsByName("subValTopic");
+		for (var i = 0; i < subs_val_list.length; ++ i)
+		{
+			subs_val_list[i].onclick = function ()
+			{
+				self.subscribeTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent, "value", this.form.saferangebelow.value, this.form.saferangeabove.value);
+			}
+		}
+	}
 	this.show = function ()
 	{
 		var html = "";
@@ -3292,9 +3334,10 @@ var rosComm = function ()
 				'<button>get server info</button>' +
 				//'<button name="publishCpp">Publish Topic via C++</button>' +
 				//'<button name="subscribeCpp">Subscribe Topic via C++</button>' +
-				'<button name="">Add String Subscription</button>' +
-				'<button name="">Add data Subscription</button>' +
-			'</div>';
+				'<button>Add String Subscription</button>' +
+				'<button>Add Data Subscription</button>' +
+			'</div>' +
+			'<div name="apilist">';
 		for (var i = 0; i < self.publish_num; ++ i)
 		{
 			html +=
@@ -3327,6 +3370,7 @@ var rosComm = function ()
 					'<input type="text" name="topicContent" value="" />' +
 				'</form>';
 		}
+		html += '</div>';
 		if (self.msg_log)
 		{
 			html +=
@@ -3364,6 +3408,10 @@ var rosComm = function ()
 		{
 			self.getServerInfo(null);
 		}
+		// callback of Add String Subscription
+		button_list[6].onclick = AddStrSub;
+		// callback of Add value Subscription
+		button_list[7].onclick = AddValSub;
 		// callbacks of publish
 		var pub_list = document.getElementsByName("publishTopic");
 		for (var i = 0; i < pub_list.length; ++ i)
