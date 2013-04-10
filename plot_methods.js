@@ -3,7 +3,8 @@ var LAB = [49.276802, -122.914913], GROUND = [10, 8];
 var STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"]
 var STATE_COLOR = ["black", "blue", "red", "green", "yellow", "cyan", "grey", "orchid", "pink", "tan", "brown", "white"];
 var STATE_ICON = [	[],
-					[{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}], [{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4}, offset: '0', repeat: '20px'}],
+					[{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}],
+					[{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4}, offset: '0', repeat: '20px'}],
 					[{icon: {path: 'M -2,0 0,-2 2,0 0,2 z',	strokeColor: '#F00', fillColor: '#F00', fillOpacity: 1}, offset: '50%'}],
 					[{icon: {path: 'M -2,-2 2,2 M 2,-2 -2,2', strokeColor: '#292', strokeWeight: 4}, offset: '50%'}],
 					[{icon: {path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3', strokeColor: '#00F', rotation: 0}, offset: '50%'}] ]
@@ -3143,16 +3144,13 @@ var rosComm = function ()
 		}
 		self.putLog("Connected " + 'ws://' + host + ':' + port);
 	}
-	this.publishTopic = function ()
+	this.publishTopic = function (name_value, type_value, msg_content)
 	{
-		var name_value = document.getElementsByName("topicName")[0].value;
-		var type_value = document.getElementsByName("topicType")[0].value;
 		if (typeof name_value == "undefined" || null == name_value || "" == name_value || typeof type_value == "undefined" || null == type_value || "" == type_value)
 		{
-			putLog("Invalid name or type", "system");
+			self.putLog("Invalid name or type");
 			return;
 		}
-		var msg_content = document.getElementsByName("topicMsg")[0].value;
 		var topic = new ros.Topic({
 			name        : name_value,
 			messageType : type_value
@@ -3160,7 +3158,7 @@ var rosComm = function ()
 		// Then we create the payload to be published. The object we pass in to ros.Message matches the fields defined in the geometry_msgs/PoseStamped.msg definition.
 		var msg = new ros.Message({data: msg_content});
 		topic.publish(msg);
-		putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
+		self.putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")");
 	}
 	this.subscribeTopic = function (name_value, type_value, content, ret_type, below, above)
 	{
@@ -3210,21 +3208,61 @@ var rosComm = function ()
 		});
 		self.putLog("Subscribed topic");
 	}
-	this.getServerInfo = function ()
+	this.callService = function (name_value, type_value, request_value, content_placeholder)
+	{
+		self.putLog("Calling service");
+		//@todo make it generic
+		var service = new ros.Service({
+		  name        : name_value,
+		  serviceType : type_value
+		});
+		// Then we create a Service Request. The object we pass in to ros.ServiceRequest matches the fields defined in the rospy_tutorials' AddTwoInts.srv file.
+		var request = new ros.ServiceRequest(request_value);
+		// Finally, we call the /add_two_ints service and get back the results in the callback. The result is a ros.ServiceResponse object.
+		service.callService(request, function (result)
+		{
+			self.putLog('Result for service call on ' + service.name + ': ' + result.sum, "log");
+		});
+	}
+	this.setParam = function (name_value, param_value, placeholder)
+	{
+		ros.getParams(function (params)
+		{
+			self.putLog(params, "log");
+		});
+		var param = new ros.Param({
+		  name: name_value
+		});
+		param.set(param_value);
+		param.get(function (value)
+		{
+			self.putLog(name_value + ': ' + value, "log");
+		});
+	}
+	this.getParam = function (name_value, param_value, placeholder)
+	{
+		var param = new ros.Param({
+		  name: name_value
+		});
+		param.set(param_value);
+		param.get(function (value)
+		{
+			self.putLog(name_value + ': ' + value, "log");
+		});
+	}
+	this.getServerInfo = function (placeholder)
 	{
 		// Retrieves the current list of topics in ROS.
 		ros.getTopics(function(topics) {
-		  putLog('Current topics in ROS: ' + topics);
+		  self.putLog('Current topics in ROS: ' + topics);
 		});
-
 		// Fetches list of all active services in ROS.
 		ros.getServices(function(services) {
-		  putLog('Current services in ROS: ' + services);
+		  self.putLog('Current services in ROS: ' + services);
 		});
-
 		// Gets list of all param names.
 		ros.getParams(function(params) {
-		  putLog('Current params in ROS: ' + params);
+		  self.putLog('Current params in ROS: ' + params);
 		});
 	}
 	this.show = function ()
@@ -3243,24 +3281,26 @@ var rosComm = function ()
 				'</ol>';
 		}
 		html +=
+			'<form align="center">' +
 				'host<input type="text" name="host" value="gonk" />' +
 				'port<input type="text" name="port" value="9090" />' +
 				'<button>Open</button>' +
 				'<button>Close</button>' +
-				'<button onclick="callService()">call service</button>' +
-				'<button onclick="setParam()">set parameter</button>' +
-				'<button onclick="getParam()">get parameter</button>' +
-				'<button onclick="getServerInfo()">get server info</button>' +
-				'<button name="publishCpp">Publish Topic via C++</button>' +
-				'<button name="subscribeCpp">Subscribe Topic via C++</button>' +
+				'<button>call service</button>' +
+				'<button>set parameter</button>' +
+				'<button>get parameter</button>' +
+				'<button>get server info</button>' +
+				//'<button name="publishCpp">Publish Topic via C++</button>' +
+				//'<button name="subscribeCpp">Subscribe Topic via C++</button>' +
 				'<button name="">Add String Subscription</button>' +
-				'<button name="">Add data Subscription</button>';
+				'<button name="">Add data Subscription</button>' +
+			'</form>';
 		for (var i = 0; i < self.publish_num; ++ i)
 		{
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="" />' +
-					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
+					'messageType<input type="text" name="topicType" value="" />' +
 					'<input type="text" name="topicContent" value="" />' +
 					'<input type="button" name="publishTopic" value="Publish Topic" />' +
 				'</form>';
@@ -3304,6 +3344,35 @@ var rosComm = function ()
 		}
 		// callback of close
 		button_list[1].onclick = self.closeRos;
+		// callback of callService
+		button_list[2].onclick = function ()
+		{
+			self.callService('/add_two_ints', 'rospy_tutorials/AddTwoInts', { A: 1, B: 2}, null);
+		}
+		// callback of setParam
+		button_list[3].onclick = function ()
+		{
+			self.setParam('max_vel_y', 0.8, null);
+		}
+		// callback of getParam
+		button_list[4].onclick = function ()
+		{
+			self.getParam('favorite_color', 'red', null);
+		}
+		// callback of getServerInfo
+		button_list[5].onclick = function ()
+		{
+			self.getServerInfo(null);
+		}
+		// callbacks of publish
+		var pub_list = document.getElementsByName("publishTopic");
+		for (var i = 0; i < pub_list.length; ++ i)
+		{
+			pub_list[i].onclick = function ()
+			{
+				self.publishTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent);
+			}
+		}
 		// callbacks of substribe string
 		var subs_str_list = document.getElementsByName("subStrTopic");
 		for (var i = 0; i < subs_str_list.length; ++ i)
