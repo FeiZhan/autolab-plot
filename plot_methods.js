@@ -3155,7 +3155,7 @@ var rosComm = function ()
 			name        : name_value,
 			messageType : type_value
 		});
-		// Then we create the payload to be published. The object we pass in to ros.Message matches the fields defined in the geometry_msgs/PoseStamped.msg definition.
+		// Then we create the payload to be published.
 		var msg = new ros.Message({data: msg_content});
 		topic.publish(msg);
 		self.putLog("Published topic (name: " + name_value + ", messageType: " + type_value + ")");
@@ -3254,15 +3254,15 @@ var rosComm = function ()
 	{
 		// Retrieves the current list of topics in ROS.
 		ros.getTopics(function(topics) {
-		  self.putLog('Current topics in ROS: ' + topics);
+		  self.putLog('Current topics in ROS: ' + topics, "log");
 		});
 		// Fetches list of all active services in ROS.
 		ros.getServices(function(services) {
-		  self.putLog('Current services in ROS: ' + services);
+		  self.putLog('Current services in ROS: ' + services, "log");
 		});
 		// Gets list of all param names.
 		ros.getParams(function(params) {
-		  self.putLog('Current params in ROS: ' + params);
+		  self.putLog('Current params in ROS: ' + params, "log");
 		});
 	}
 	this.show = function ()
@@ -3281,7 +3281,7 @@ var rosComm = function ()
 				'</ol>';
 		}
 		html +=
-			'<form align="center">' +
+			'<div align="center">' +
 				'host<input type="text" name="host" value="gonk" />' +
 				'port<input type="text" name="port" value="9090" />' +
 				'<button>Open</button>' +
@@ -3294,7 +3294,7 @@ var rosComm = function ()
 				//'<button name="subscribeCpp">Subscribe Topic via C++</button>' +
 				'<button name="">Add String Subscription</button>' +
 				'<button name="">Add data Subscription</button>' +
-			'</form>';
+			'</div>';
 		for (var i = 0; i < self.publish_num; ++ i)
 		{
 			html +=
@@ -3370,7 +3370,7 @@ var rosComm = function ()
 		{
 			pub_list[i].onclick = function ()
 			{
-				self.publishTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent);
+				self.publishTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent.value);
 			}
 		}
 		// callbacks of substribe string
