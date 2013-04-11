@@ -3204,7 +3204,7 @@ var rosComm = function ()
 			{
 				content.value = msg_tmp;
 			}
-			topic.unsubscribe();
+			//topic.unsubscribe();
 		});
 		self.putLog("Subscribed topic");
 	}
@@ -3343,7 +3343,7 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="" />' +
-					'messageType<input type="text" name="topicType" value="" />' +
+					'type<input type="text" name="topicType" value="" />' +
 					'<input type="text" name="topicContent" value="" />' +
 					'<input type="button" name="publishTopic" value="Publish Topic" />' +
 				'</form>';
@@ -3353,7 +3353,7 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
+					'type<input type="text" name="topicType" value="std_msgs/String" />' +
 					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
 					'<input type="text" name="topicContent" value="" />' +
 				'</form>';
@@ -3363,7 +3363,7 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'messageType<input type="text" name="topicType" value="std_msgs/Float32" />' +
+					'type<input type="text" name="topicType" value="std_msgs/Float32" />' +
 					'safe-range<input type="text" name="saferangebelow" value="0" />' +
 					'<input type="text" name="saferangeabove" value="100" />' +
 					'<input type="button" name="subValTopic" value="Subscribe Topic" />' +
