@@ -429,6 +429,7 @@ var labLogo = function ()
 					'<tr class="info" align="' + self.align + '">' +
 						'<td><p class="text-center"><a href="./index.html" target="_blank">Index</a></p></td>' +
 						'<td><p class="text-center"><a href="./index-ipad.html" target="_blank">Index-ipad</a></p></td>' +
+						'<td><p class="text-center"><a href="./ros1.html" target="_blank">rosjs</a></p></td>' +
 						'<td><p class="text-center"><a href="./debugger.html" target="_blank">Debugger</a></p></td>' +
 						'<td><p class="text-center"><a href="./gmap.html" target="_blank">Google Map</a></p></td>' +
 						'<td><p class="text-center"><a href="./status.html" target="_blank">Status</a></p></td>' +
@@ -438,7 +439,6 @@ var labLogo = function ()
 						'<td><p class="text-center"><a href="./static.html" target="_blank">Static Plot</a></p></td>' +
 						'<td><p class="text-center"><a href="./dataparser/index.html" target="_blank">Data Parser</a></p></td>' +
 						'<td><p class="text-center"><a href="./test.html" target="_blank">Test</a></p></td>' +
-						'<td><p class="text-center"><a href="./ros1.html" target="_blank">rosjs</a></p></td>' +
 					'</tr>' +
 				'</table>';
 		}
