@@ -1,6 +1,49 @@
-A website to demonstrate the figures and trajectories of different robots in Autonomy Lab at Simon Fraser University.
+A dashboard to demonstrate the figures and trajectories of different robots in Autonomy Lab at Simon Fraser University.
 
-by Fei Zhan@Autolab
+by Fei Zhan @ Autonomy Lab
+
+Usage
+==========================
+If you have a computer running this Dashboard, and Redis server for data retrieval and data backup, you can make use of that by simply visit that webpage, and check the plots of the robots.
+
+If you have a new robot needed to plug into the dashboard,
+First, rpush the name of the robot into robotname in Redis;
+Second, set your robot data into key name as your robot name in Redis, with format of robot data as "frame 100 x 20 y 30 voltage 100 current 0.1".
+Last, select the corresponding robot name in the Dashboard, and see the plot and trajectory of that robot.
+
+The trajectory is from "x" and "y" values of your robot.
+
+Setup
+==========================
+Install Apache and PHP (LAMP)
+sudo apt-get install apache2 php5-mysql libapache2-mod-php5 mysql-server
+Test if Apache works
+Open http://localhost or http://127.0.0.1 in your browser
+Change the default directory of website /var/www into any you want
+sudo gedit /etc/apache2/sites-enabled/000-default
+Change DocumentRoot /var/www to DocumentRoot /home/user/public_html.
+Change Directory /var/www/ to Directory /home/user/public_html/.
+restart Apache: sudo service apache2 restart
+Test if PHP works
+sudo vi direcory of website/info.php
+Write <?php phpinfo(); ?> into info.php
+Open http://localhost/info.php in your browser
+Install ROSBridge
+sudo apt-get install ros-fuerte-rosbridge-suite
+Clone source code of autolab-plot into the default directory of website
+cd direcory of website/
+sudo git clone https://github.com/FeiZhan/autolab-plot.git
+Test if rosjs works
+Open http://localhost/autolab-plot/rosjs/example/index.html in your browser
+Follow the instruction on the page, and check if JavaScript console has correct results.
+Enjoy the ros part of the Dashboard
+Open http://localhost/autolab-plot/test.html in your browser
+With roscore, rosapi, and rosbridge running, make use of the dashboard
+Use other parts of the Dashboard
+Need Redis installed
+Run Redis server
+Open http://localhost/autolab-plot/index.html in your browser
+Set the host as localhost
 
 License
 ==========================
@@ -17,54 +60,6 @@ A copy of the license is included with the sourcecode in the file
 'COPYING". Copying and redistribution is permitted only under the
 terms of the license.
 
-Usage
-==========================
-data generator
-
-Generate various data in order to facilitate experimenting and testing robots.
-It can insert different data into Redis in our lab with specified keys.
-You can change the host and port of Redis, frame rate of setting, key and value of your own data.
-If wanting random data or clear existing data, you can use the codes listed in the webpage. Simply copy and paste them into the value zone of your key, and press submit.
-
-data parser
-----------------
-Old version of the data parser based on C++ and GNUPlot.
-Useless except someone loves GNUPlot.
-
-static plot
-----------------
-Draw a static plot of data from Redis.
-If you organize your data into a string separated with space, and set into Redis, you can plot that with this page by simply input the key and press submit.
-
-a simple dynamic plot
-----------------
-Really simple. Not effective.
-
-dynamic plot for all robots
-----------------
-Dynamic plots and trajectories of robots with data retrieved from Redis.
-I suppose the names of robots as "cb18", "cb01", and "pioneer01", and the key of the data from Redis is the name. I think I should make it configurable later on.
-The format of the data is "time x y voltage current".
-If you use "data generator" (the first link in the front page), put "cb18" (without quotation mark) as key, and "@@@random_robot" (without quotation mark) as value, you can see the figure and trajectory is moving.
-
-dynamic plot for one robot
-----------------
-Similar with previous, but the data are not from Redis.
-So you can use the previous one instead.
-
-trajectory plot
-----------------
-Two different versions of trajectory plots with data retrieved from Redis.
-The format of data is the same with the one for "dynamic plot for all robots", but it only works for one robot (the first one in the data stream).
-
-google map
----------------
-Trajectory plots on google map with data retrieved from Redis.
-You can see energy map, time map, and colorful trajectory representing inner state of the robot. You can follow any of the robots. If you click on a grid in energy map or time map, you can see the data for that grid.
-The data for each robot is from Redis. The key is the name of the robot (only cb18, cb01, pi01 available). The value follows the format "time x y voltage current" (without quotation mark).
-If you use "data generator" (the first link in the front page), put "cb18" (without quotation mark) as key, and "@@@field_robot" (without quotation mark, note not @@@random_robot) as value, you can see the trajectory on the google map is moving.
-
-Suggestion
+Suggestions
 =========================
 The website is still under construction. If you find bugs, or feel hard to understand the description with my poor English, please contact me [fzhan at sfu dot ca]. I apologize for any inconvience.
-The website is not open enough. If you don't like data representing voltage or current, you can put your own data there, but the title won't change. If you don't like the names of the robots, you can also change the program.
