@@ -3204,7 +3204,7 @@ var rosComm = function ()
 			{
 				content.value = msg_tmp;
 			}
-			topic.unsubscribe();
+			//topic.unsubscribe();
 		});
 		self.putLog("Subscribed topic");
 	}
