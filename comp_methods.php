@@ -416,6 +416,10 @@ function calTraj2Grid()
 	{
 		//obtain robot data from Redis
 		$r = explode(" ", $client->get($names[$i]));
+		if (count($r) == 0)
+		{
+			continue;
+		}
 		$now = intval($r[1]);
 		if (count($last_frame) < count($names) || $last_frame[$i] >= $now)
 		{

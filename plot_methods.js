@@ -1555,6 +1555,7 @@ var trajPlot2 = function ()
 	 */
 	this.robot_data;
 	this.php_comm = new phpComm();
+	this.grid_php_comm = new phpComm();
 	/**
 	 * the placeholder of debug info
 	 * @public
@@ -1562,6 +1563,7 @@ var trajPlot2 = function ()
 	this.debug = "debug";
 	var view_type = "basic", follow, gr, test1;
 	var data = new Object(), data2 = new Object(), yaw = new Object(), body = new Object(), dir = new Object(), line = new Object(), grid;
+	var GRID_SIZE = 10;
 	var self = this;
 	/**
 	 * combine data into position data
@@ -1780,10 +1782,13 @@ var trajPlot2 = function ()
 		var patch1 = new jxCircle(new jxPoint(30, self.height - 30), 20, new jxPen(new jxColor("green"),'1px'));
 		patch1.draw(gr);
 	}
-	var clearGrids = function ()
+	var clearGridFromServer = function ()
 	{
 		self.php_comm.cmd = "method=clearTraj2Grids";
 		self.php_comm.commPhp();
+	}
+	var clearGrids = function ()
+	{
 		if (typeof grid == "undefined" || null == grid)
 		{
 			grid = new Array();
@@ -1796,25 +1801,27 @@ var trajPlot2 = function ()
 			}
 			grid[i] = new Array();
 		}
+		while (grid.length <= self.width / GRID_SIZE)
+		{
+			grid.push(new Array());
+		}
 	}
 	var calGrid = function ()
 	{
-		self.php_comm.cmd = "method=calTraj2Grids&width=" + self.width + "&height=" + self.height;
-		self.php_comm.commPhp();
+		self.grid_php_comm.cmd = "method=calTraj2Grid&width=" + self.width + "&height=" + self.height;
+		self.grid_php_comm.commPhp();
+document.getElementById("debug").innerHTML = "debug rec: " + self.grid_php_comm.receive;
 		clearGrids();
-		var GRID_SIZE = 10;
-		self.php_comm.cmd = "method=calTraj2Grids";
-		self.php_comm.commPhp();
-		if (null == self.php_comm.receive || "" == self.php_comm.receive)
+		if (null == self.grid_php_comm.receive || "" == self.grid_php_comm.receive)
 		{
 			return;
 		}
-		var rec = self.php_comm.receive.split(" ");
+		var rec = self.grid_php_comm.receive.split(" ");
 		// the format of the data is "x y color value"
 		for (var i = 0; i + 3 < rec.length; i += 3)
 		{
 			var x = parseInt(rec[i]), y = parseInt(rec[i + 1]);
-			if (typeof x == "undefined" || null == x || typeof y == "undefined" || null == y)
+			if (typeof x == "undefined" || null == x || isNaN(x) || typeof y == "undefined" || null == y || isNaN(y))
 			{
 				continue;
 			}
@@ -1917,6 +1924,7 @@ var trajPlot2 = function ()
 		// add callback to clear grids button
 		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = function ()
 		{
+			clearGridFromServer();
 			clearGrids();
 		}
 		var select = document.getElementById(self.canvas).getElementsByTagName("select");
