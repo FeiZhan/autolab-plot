@@ -50,6 +50,11 @@ function getKey()
 function status()
 {
 	global $client;
+	if (is_null($client) || is_null($client->ping()))
+	{
+		echo "cannot reach server";
+		return;
+	}
 	echo "dbsize ".$client->dbsize().", lastsave ".$client->lastsave().", ";
 	$info = $client->info();
 	foreach ($info as $key => $value)
@@ -178,6 +183,11 @@ function timeTravel()
 function backup($key, $data)
 {
 	global $bak_client;
+	if (is_null($bak_client) || is_null($bak_client->ping()))
+	{
+		echo "cannot reach server";
+		return;
+	}
 	if ($bak_client->llen($key."-bak") > 0)
 	{
 		$old = $bak_client->lrange($key."-bak", -1, -1);

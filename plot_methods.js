@@ -77,6 +77,10 @@ var phpComm = function ()
 		var now = new Date().getTime();
 		return now - rec_time;
 	}
+	this.clearSendTime = function ()
+	{
+		send_time = [0];
+	}
 	/**
 	 * get the delay of the server
 	 * @public
@@ -591,7 +595,8 @@ var serverStatus = function ()
 		if (self.php_comm.getUnrecTime() > 1000)
 		{
 			var p = document.getElementById(self.canvas).getElementsByTagName("p");
-			for (var i = 3; i < p.length; i += 2)
+			self.php_comm.clearSendTime();
+			for (var i = 1; i < p.length; i += 2)
 			{
 				p[i].innerHTML = "-";
 			}
