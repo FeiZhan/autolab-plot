@@ -3270,9 +3270,9 @@ var rosComm = function ()
 		var html =
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'messageType<input type="text" name="topicType" value="std_msgs/String" />' +
-					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
-					'<input type="text" name="topicContent" value="" />' +
+					'type<input type="text" name="topicType" value="std_msgs/String" size="3" />' +
+					'<input type="button" name="subStrTopic" value="Subscribe" />' +
+					'<input type="text" name="topicContent" value="" size="120" />' +
 				'</form>';
 		document.getElementsByName("apilist")[0].innerHTML += html;
 		// callbacks of substribe string
@@ -3290,11 +3290,11 @@ var rosComm = function ()
 		var html =
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'messageType<input type="text" name="topicType" value="std_msgs/Float32" />' +
-					'safe-range<input type="text" name="saferangebelow" value="0" />' +
-					'<input type="text" name="saferangeabove" value="100" />' +
-					'<input type="button" name="subValTopic" value="Subscribe Topic" />' +
-					'<input type="text" name="topicContent" value="" />' +
+					'type<input type="text" name="topicType" value="std_msgs/Float32" size="3" />' +
+					'safe-range<input type="text" name="saferangebelow" value="0" size="5"  />' +
+					'<input type="text" name="saferangeabove" value="100" size="5" />' +
+					'<input type="button" name="subValTopic" value="Subscribe"/>' +
+					'<input type="text" name="topicContent" value="" size="100" />' +
 				'</form>';
 		document.getElementsByName("apilist")[0].innerHTML += html;
 		// callbacks of substribe value
@@ -3353,9 +3353,9 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'type<input type="text" name="topicType" value="std_msgs/String" />' +
-					'<input type="button" name="subStrTopic" value="Subscribe Topic" />' +
-					'<input type="text" name="topicContent" value="" />' +
+					'type<input type="text" name="topicType" value="std_msgs/String" size="3" />' +
+					'<input type="button" name="subStrTopic" value="Subscribe" />' +
+					'<input type="text" name="topicContent" value="" size="120" />' +
 				'</form>';
 		}
 		for (var i = 0; i < self.subscribe_value_num; ++ i)
@@ -3363,11 +3363,11 @@ var rosComm = function ()
 			html +=
 				'<form align="center">' +
 					'name<input type="text" name="topicName" value="/listener" />' +
-					'type<input type="text" name="topicType" value="std_msgs/Float32" />' +
-					'safe-range<input type="text" name="saferangebelow" value="0" />' +
-					'<input type="text" name="saferangeabove" value="100" />' +
-					'<input type="button" name="subValTopic" value="Subscribe Topic" />' +
-					'<input type="text" name="topicContent" value="" />' +
+					'type<input type="text" name="topicType" value="std_msgs/Float32" size="3" />' +
+					'safe-range<input type="text" name="saferangebelow" value="0" size="5"  />' +
+					'<input type="text" name="saferangeabove" value="100" size="5" />' +
+					'<input type="button" name="subValTopic" value="Subscribe"/>' +
+					'<input type="text" name="topicContent" value="" size="100" />' +
 				'</form>';
 		}
 		html += '</div>';
