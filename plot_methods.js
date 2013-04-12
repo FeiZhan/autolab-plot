@@ -1924,7 +1924,6 @@ document.getElementById("debug").innerHTML = "debug rec: " + self.grid_php_comm.
 		// add callback to clear grids button
 		document.getElementById(self.canvas).getElementsByTagName("input")[0].onclick = function ()
 		{
-			clearGridFromServer();
 			clearGrids();
 		}
 		var select = document.getElementById(self.canvas).getElementsByTagName("select");
@@ -3095,8 +3094,9 @@ var rosComm = function ()
 	this.canvas = "rosComm";
 	this.need_instruction = true;
 	this.publish_num = 1;
-	this.subscribe_str_num = 4;
-	this.subscribe_value_num = 4;
+	this.subscribe_str_num = 7;
+	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status"];
+	this.subscribe_value_num = 1;
 	this.msg_log = true;
 	var ros = null;
 	var self = this;
@@ -3185,6 +3185,7 @@ var rosComm = function ()
 			messageType : type_value
 		});
 		self.putLog("Subscribing topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
+		topic.unsubscribe();
 		// Then we add a callback to be called every time a message is published on this topic.
 		topic.subscribe(function (message)
 		{
@@ -3194,7 +3195,7 @@ var rosComm = function ()
 				msg_tmp += i + ": " + message[i] + " ";
 			}
 			self.putLog("Received msg: " + msg_tmp, "log");
-			if (ret_type != "string")
+			if (ret_type == "value")
 			{
 				if (! isNaN(parseFloat(message.data)) && isFinite(message.data))
 				{
@@ -3213,11 +3214,15 @@ var rosComm = function ()
 				{
 					content.value = NaN;
 				}
+			}
+			else if (ret_type == "speech")
+			{
+				content.value = msg_tmp;
+				speak(message.data);
 			} else
 			{
 				content.value = msg_tmp;
 			}
-			//topic.unsubscribe();
 		});
 		self.putLog("Subscribed topic");
 	}
@@ -3282,8 +3287,8 @@ var rosComm = function ()
 	{
 		var html =
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="/listener" />' +
-					'type<input type="text" name="topicType" value="std_msgs/String" size="3" />' +
+					'name<input type="text" name="topicName" value="" />' +
+					'type<input type="text" name="topicType" value="" size="3" />' +
 					'<input type="button" name="subStrTopic" value="Subscribe" />' +
 					'<input type="text" name="topicContent" value="" size="120" />' +
 				'</form>';
@@ -3302,8 +3307,8 @@ var rosComm = function ()
 	{
 		var html =
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="/listener" />' +
-					'type<input type="text" name="topicType" value="std_msgs/Float32" size="3" />' +
+					'name<input type="text" name="topicName" value="" />' +
+					'type<input type="text" name="topicType" value="" size="3" />' +
 					'safe-range<input type="text" name="saferangebelow" value="0" size="5"  />' +
 					'<input type="text" name="saferangeabove" value="100" size="5" />' +
 					'<input type="button" name="subValTopic" value="Subscribe"/>' +
@@ -3361,21 +3366,30 @@ var rosComm = function ()
 					'<input type="button" name="publishTopic" value="Publish Topic" />' +
 				'</form>';
 		}
-		for (var i = 0; i < self.subscribe_str_num; ++ i)
+		html +=
+			'<form align="center">' +
+				'name<input type="text" name="topicName" value="' + self.sub_str_name[0] + '" />' +
+				'type<input type="text" name="topicType" value="std_msgs/String" />' +
+				'<input type="button" name="subStrTopic" value="Subscribe" />' +
+				'<input type="button" name="speech" onclick="" value="speak" />' +
+				'<input type="text" name="topicContent" value="" style="height:6%;width:80%;font-size:12pt;" />' +
+			'</form>';
+		for (var i = 1; i < self.subscribe_str_num; ++ i)
 		{
+			var name = (self.sub_str_name.length > i) ? self.sub_str_name[i] : "";
 			html +=
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="/listener" />' +
-					'type<input type="text" name="topicType" value="std_msgs/String" size="3" />' +
+					'name<input type="text" name="topicName" value="' + name + '" />' +
+					'type<input type="text" name="topicType" value="std_msgs/String" />' +
 					'<input type="button" name="subStrTopic" value="Subscribe" />' +
-					'<input type="text" name="topicContent" value="" size="120" />' +
+					'<input type="text" name="topicContent" value="" style="height:6%;width:80%;font-size:12pt;" />' +
 				'</form>';
 		}
 		for (var i = 0; i < self.subscribe_value_num; ++ i)
 		{
 			html +=
 				'<form align="center">' +
-					'name<input type="text" name="topicName" value="/listener" />' +
+					'name<input type="text" name="topicName" value="" />' +
 					'type<input type="text" name="topicType" value="std_msgs/Float32" size="3" />' +
 					'safe-range<input type="text" name="saferangebelow" value="0" size="5"  />' +
 					'<input type="text" name="saferangeabove" value="100" size="5" />' +
@@ -3392,7 +3406,13 @@ var rosComm = function ()
 					'<div name="msgLog"></div>' +
 				'</fieldset>';
 		}
+		html += '<div id="audio"></div>';
 		document.getElementById(self.canvas).innerHTML = html;
+		document.getElementsByName("speech")[0].onclick = function ()
+		{
+			var speech = (this.form.topicContent.value == "") ? "Empty inside !" : this.form.topicContent.value;
+			speak(speech);
+		}
 		var button_list = document.getElementById(self.canvas).getElementsByTagName("button");
 		// callback of open
 		button_list[0].onclick = function ()
@@ -3436,7 +3456,11 @@ var rosComm = function ()
 		}
 		// callbacks of substribe string
 		var subs_str_list = document.getElementsByName("subStrTopic");
-		for (var i = 0; i < subs_str_list.length; ++ i)
+		subs_str_list[0].onclick = function ()
+		{
+			self.subscribeTopic(this.form.topicName.value, this.form.topicType.value, this.form.topicContent, "speech");
+		}
+		for (var i = 1; i < subs_str_list.length; ++ i)
 		{
 			subs_str_list[i].onclick = function ()
 			{
