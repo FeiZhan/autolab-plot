@@ -3184,7 +3184,6 @@ var rosComm = function ()
 			name        : name_value,
 			messageType : type_value
 		});
-		self.putLog("Subscribing topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
 		topic.unsubscribe();
 		// Then we add a callback to be called every time a message is published on this topic.
 		topic.subscribe(function (message)
@@ -3194,7 +3193,7 @@ var rosComm = function ()
 			{
 				msg_tmp += i + ": " + message[i] + " ";
 			}
-			self.putLog("Received msg: " + msg_tmp, "log");
+			//self.putLog("Received msg: " + msg_tmp, "log");
 			if (ret_type == "value")
 			{
 				if (! isNaN(parseFloat(message.data)) && isFinite(message.data))
@@ -3224,7 +3223,7 @@ var rosComm = function ()
 				content.value = msg_tmp;
 			}
 		});
-		self.putLog("Subscribed topic");
+		self.putLog("Subscribed topic (name: " + name_value + ", messageType: " + type_value + ")", "system");
 	}
 	this.callService = function (name_value, type_value, request_value, content_placeholder)
 	{
