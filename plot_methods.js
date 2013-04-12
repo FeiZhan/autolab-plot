@@ -3099,7 +3099,7 @@ var rosComm = function ()
 	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status"];
 	this.subscribe_value_num = 1;
 	this.msg_log = true;
-	var ros = null;
+	var ros = null, last_speech = "";
 	var self = this;
 	this.putLog = function (msg, type)
 	{
@@ -3218,7 +3218,11 @@ var rosComm = function ()
 			else if (ret_type == "speech")
 			{
 				content.value = msg_tmp;
-				speak(message.data);
+				if (message.data != last_speech)
+				{
+					last_speech = message.data;
+					speak(message.data);
+				}
 			} else
 			{
 				content.value = msg_tmp;
