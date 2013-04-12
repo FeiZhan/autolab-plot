@@ -3093,6 +3093,7 @@ var rosComm = function ()
 {
 	this.canvas = "rosComm";
 	this.need_instruction = true;
+	this.host = "";
 	this.publish_num = 1;
 	this.subscribe_str_num = 7;
 	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status"];
@@ -3324,6 +3325,21 @@ var rosComm = function ()
 			}
 		}
 	}
+	this.autoStart = function ()
+	{
+		self.connectRos(self.host, "9090");
+		var subs_str_list = document.getElementsByName("subStrTopic");
+		var subStrForm_list = document.getElementsByName("subStrForm");
+		for (var i = 0; i < subs_str_list.length; ++ i)
+		{
+			if ("" == subStrForm_list[i].topicName.value)
+			{
+				continue;
+			}
+			var ret_type = (i == 0) ? "speech" : "string";
+			self.subscribeTopic(subStrForm_list[i].topicName.value, subStrForm_list[i].topicType.value, subStrForm_list[i].topicContent, ret_type);
+		}
+	}
 	this.show = function ()
 	{
 		var html = "";
@@ -3341,7 +3357,7 @@ var rosComm = function ()
 		}
 		html +=
 			'<div align="center">' +
-				'host<input type="text" name="host" value="gonk" />' +
+				'host<input type="text" name="host" value="' + self.host + '" />' +
 				'port<input type="text" name="port" value="9090" />' +
 				'<button>Open</button>' +
 				'<button>Close</button>' +
@@ -3366,7 +3382,7 @@ var rosComm = function ()
 				'</form>';
 		}
 		html +=
-			'<form align="center">' +
+			'<form align="center" name="subStrForm">' +
 				'name<input type="text" name="topicName" value="' + self.sub_str_name[0] + '" />' +
 				'type<input type="text" name="topicType" value="std_msgs/String" />' +
 				'<input type="button" name="subStrTopic" value="Subscribe" />' +
@@ -3377,7 +3393,7 @@ var rosComm = function ()
 		{
 			var name = (self.sub_str_name.length > i) ? self.sub_str_name[i] : "";
 			html +=
-				'<form align="center">' +
+				'<form align="center" name="subStrForm">' +
 					'name<input type="text" name="topicName" value="' + name + '" />' +
 					'type<input type="text" name="topicType" value="std_msgs/String" />' +
 					'<input type="button" name="subStrTopic" value="Subscribe" />' +
