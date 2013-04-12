@@ -2658,57 +2658,16 @@ var safeRange = function ()
  */
 var trajGmap = function ()
 {
-	/**
-	 * the place to hold this object
-	 * @public
-	 */
 	this.canvas = "trajGmap";
-	/**
-	 * the placeholder of debug info
-	 * @public
-	 */
 	this.debug = "debug";
-	/**
-	 * the place to hold this plot
-	 * @public
-	 */
 	this.map_canvas = "map_canvas";
-	/**
-	 * @public
-	 */
 	this.border = 0;
-	/**
-	 * @public
-	 */
 	this.align = "center";
-	/**
-	 * @public
-	 */
 	this.width = "40%";
-	/**
-	 * the placeholder of debug info
-	 * @public
-	 */
 	this.debug = "debug";
-	/**
-	 * the timeout between two updates (ms)
-	 * @public
-	 */
 	this.timeout = 300;
-	/**
-	 * robot data
-	 * @public
-	 */
 	this.robot_data;
-	/**
-	 * create a php communication to get grid information
-	 * @public
-	 */
 	this.grid_php_comm = new phpComm();
-	/**
-	 * options for map
-	 * @public
-	 */
 	this.map_options =
 	{
 		zoom: 17,
@@ -2718,19 +2677,11 @@ var trajGmap = function ()
 	var view_type = "basic", follow = "", map, update_grid = new Object();
 	var last_coord = new Object(), coord = new Object(), rpath = new Object(), robot = new Object(), grid = new Object(), grid_value = new Object();
 	var self = this;
-	/**
-	 * set map externally
-	 * @public
-	 */
 	this.setMap = function (m)
 	{
 		map = m;
 	}
-	/**
-	 * init map
-	 * @public
-	 * @bug no longer useful
-	 */
+	//@bug no longer useful
 	this.init = function ()
 	{
 		map = new google.maps.Map(document.getElementById('map_canvas'),
@@ -2741,10 +2692,6 @@ var trajGmap = function ()
 			title: 'Autonomy Lab at Simon Fraser University'
 		});
 	}
-	/**
-	 * clear grid data from the map
-	 * @private
-	 */
 	var clearGrid = function ()
 	{
 		for (i in grid)
@@ -2753,19 +2700,11 @@ var trajGmap = function ()
 			grid[i].setMap(null);
 		}
 	}
-	/**
-	 * transform the coordinate into grid position
-	 * @private
-	 */
 	var coordToGrid = function (x, y)
 	{
 		var GRID_SIZE = .001;
 		return [Math.round((x - LAB[0] - GRID_SIZE/2) / GRID_SIZE), Math.round((y - LAB[1] - GRID_SIZE/2) / GRID_SIZE)];
 	}
-	/**
-	 * pop up a info window on a grid
-	 * @private
-	 */
 	var infoWnd = function (event)
 	{
 		var grid_pos = coordToGrid(event.latLng.lat(), event.latLng.lng());
@@ -2783,10 +2722,6 @@ var trajGmap = function ()
 		});
 		infownd.open(map);
 	}
-	/**
-	 * generate the trajectory
-	 * @private
-	 */
 	var robotMove = function ()
 	{
 		// separate the data into different robots
@@ -2873,11 +2808,7 @@ var trajGmap = function ()
 		}
 		window.setTimeout(robotMove, self.timeout);
 	}
-	/**
-	 * generate grids on energy or time distribution
-	 * @private
-	 * @todo
-	 */
+	//@todo
 	var calGrid = function ()
 	{
 		if (view_type == "energy" || view_type == "time")
@@ -2954,10 +2885,6 @@ var trajGmap = function ()
 		}
 		window.setTimeout(calGrid, self.timeout);
 	}
-	/**
-	 * waiting for the setup of the map
-	 * @private
-	 */
 	var update = function ()
 	{
 		// wait until the map is setuped, and start update plots
@@ -2972,10 +2899,6 @@ var trajGmap = function ()
 			setTimeout(update, self.timeout);
 		}
 	}
-	/**
-	 * show this object, add callbacks, and start to plot periodically
-	 * @public
-	 */
 	this.show = function ()
 	{
 		var html =
