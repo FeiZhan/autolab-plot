@@ -3,19 +3,19 @@
 		<title>Dashboard for Autolab</title>
 		<script src="rosjs/dist/eventemitter2.js"></script>
 		<script src="rosjs/ros.js"></script>
-		<script type="text/javascript" src="rosplot.js"></script>
+		<script type="text/javascript" src="plot_methods.js"></script>
 		<script language="javascript" type="text/javascript" src="./speak-js/speakClient.js"></script>
-		<script src="rosplot.js"></script>
 	</head>
 	<body>
 		<div id="labLogo"></div>
+		<br />
 		<div id="rosComm"></div>
 		<p id="debug">debug: </p>
 		<p id="send">send: </p>
 		<p id="receive">receive: </p>
 		<script type="text/javascript">
-//var ll = new labLogo();
-//ll.show();
+var ll = new labLogo();
+ll.show();
 
 var rc = new rosComm();
 rc.host = "gonk";

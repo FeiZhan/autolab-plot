@@ -2,12 +2,6 @@ var HOST = "192.168.1.120", PORT = "6379", SECOND_HOST = "localhost";
 var LAB = [49.276802, -122.914913], GROUND = [10, 8];
 var STATE = ["A", "B", "C", "D", "E", "F", "G"], SUBSTATE = ["a", "b", "c", "d", "e", "f", "g"]
 var STATE_COLOR = ["black", "blue", "red", "green", "yellow", "cyan", "grey", "orchid", "pink", "tan", "brown", "white"];
-var STATE_ICON = [	[],
-					[{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}],
-					[{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4}, offset: '0', repeat: '20px'}],
-					[{icon: {path: 'M -2,0 0,-2 2,0 0,2 z',	strokeColor: '#F00', fillColor: '#F00', fillOpacity: 1}, offset: '50%'}],
-					[{icon: {path: 'M -2,-2 2,2 M 2,-2 -2,2', strokeColor: '#292', strokeWeight: 4}, offset: '50%'}],
-					[{icon: {path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3', strokeColor: '#00F', rotation: 0}, offset: '50%'}] ]
 /**
  * @class create a php communication
  */
@@ -370,53 +364,16 @@ var robotData = function ()
  */
 var labLogo = function ()
 {
-	/**
-	 * the place to hold this object
-	 * @public
-	 */
 	this.canvas = "labLogo";
-	/**
-	 * @public
-	 */
 	this.border = 0;
-	/**
-	 * @public
-	 */
 	this.width = "100%";
-	/**
-	 * @public
-	 */
 	this.align = "center";
-	/**
-	 * the width percentage of the logo
-	 * @public
-	 */
 	this.logo_width = "30%";
-	/**
-	 * the path and file name of the logo
-	 * @public
-	 */
 	this.src = "resource/logo.png";
-	/**
-	 * the title of this page
-	 * @public
-	 */
 	this.title = "Autolab Dashboard";
-	/**
-	 * the placeholder of debug info
-	 * @public
-	 */
 	this.debug = "debug";
-	/**
-	 * if we need subheading
-	 * @public
-	 */
 	this.subheading = 1;
 	var self = this;
-	/**
-	 * show the object
-	 * @public
-	 */
 	this.show = function ()
 	{
 		var html = 
@@ -2668,6 +2625,12 @@ var trajGmap = function ()
 	this.timeout = 300;
 	this.robot_data;
 	this.grid_php_comm = new phpComm();
+	var STATE_ICON = [	[],
+						[{icon: {path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW}, offset: "100%"}],
+						[{icon: {path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4}, offset: '0', repeat: '20px'}],
+						[{icon: {path: 'M -2,0 0,-2 2,0 0,2 z',	strokeColor: '#F00', fillColor: '#F00', fillOpacity: 1}, offset: '50%'}],
+						[{icon: {path: 'M -2,-2 2,2 M 2,-2 -2,2', strokeColor: '#292', strokeWeight: 4}, offset: '50%'}],
+						[{icon: {path: 'M -1,0 A 1,1 0 0 0 -3,0 1,1 0 0 0 -1,0M 1,0 A 1,1 0 0 0 3,0 1,1 0 0 0 1,0M -3,3 Q 0,5 3,3', strokeColor: '#00F', rotation: 0}, offset: '50%'}] ];
 	this.map_options =
 	{
 		zoom: 17,
@@ -3015,7 +2978,7 @@ var rosCommCpp = function ()
 var rosComm = function ()
 {
 	this.canvas = "rosComm";
-	this.need_instruction = true;
+	this.need_instruction = false;
 	this.host = "";
 	this.publish_num = 1;
 	this.subscribe_str_num = 7;
