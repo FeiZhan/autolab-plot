@@ -616,14 +616,14 @@ function calGrid()
 		$tmp = $i / $sum;
 		if ($tmp < 0.001)
 		{
-			$color = 230;
+			$color = 240;
 		}
-		else if ($tmp > 0.1)
+		else if ($tmp > 0.05)
 		{
-			$color = 50;
+			$color = 40;
 		} else
 		{
-			$color = round(230 + ($tmp - 0.001) / (0.1 - 0.001) * (50 - 230));
+			$color = round(230 + ($tmp - 0.001) / (0.05 - 0.001) * (40 - 240));
 		}
 		//@todo if the color does not change, we do not need to transmit it
 		if (array_key_exists($key, $old_color) || $old_color[$key] != $color)
