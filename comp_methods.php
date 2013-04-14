@@ -180,7 +180,7 @@ function timeTravel()
 	echo ($next / 1000.0)." ".($next - $nexttime);
 }
 // backup data into backup database when get_robot_data is called
-function backup($key, $data)
+function backup_internal($key, $data)
 {
 	global $bak_client;
 	if (is_null($bak_client) || is_null($bak_client->ping()))
@@ -207,6 +207,19 @@ function backup($key, $data)
 		$bak_client->rpush($key."-bak", "servertime ".$time." ".$data);
 	}
 }
+function backup()
+{
+	$source = $_GET["source"];
+	$key = $_GET["key"];
+	$value = $_GET["value"];
+	if (is_null($key) || "" == $key)
+	{
+		echo "failed";
+		return;
+	}
+	backup_internal($key, $value);
+	echo "ok";
+}
 // get robot data
 function getRobotData()
 {
@@ -215,7 +228,7 @@ function getRobotData()
 	foreach ($name as $i)
 	{
 		$ret = $client->get($i);
-		backup($i, $ret);
+		backup_internal($i, $ret);
 		echo $ret.", ";
 	}
 }
