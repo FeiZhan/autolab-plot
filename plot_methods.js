@@ -2985,6 +2985,7 @@ var rosComm = function ()
 	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status"];
 	this.subscribe_value_num = 1;
 	this.msg_log = true;
+	this.php_comm = new phpComm();
 	var ros = null, last_speech = "";
 	var self = this;
 	this.putLog = function (msg, type)
@@ -3080,6 +3081,8 @@ var rosComm = function ()
 			{
 				msg_tmp += i + ": " + message[i] + " ";
 			}
+			php_comm.cmd = "method=backup&source=rostopic&key" + name_value + "&value=" + msg_tmp;
+document.getElementById("debug").innerHTML = "debug: " + php_comm.receive;
 			//self.putLog("Received msg: " + msg_tmp, "log");
 			if (ret_type == "value")
 			{
