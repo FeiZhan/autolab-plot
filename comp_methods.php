@@ -11,7 +11,8 @@ $LAB = array(49.276802, -122.914913);
 $HOST = "192.168.1.120";
 $PORT = "6379";
 $SECOND_HOST = "localhost";
-//$ROBOT_NAME = array("cb18", "cb01", "pi01");
+$STAGE_PATH = "/home/fzhan/Documents/class/multimedia_systems/project/stage-mm/";
+$STAGE_FILENAME = "data/stage.log";
 
 $host = $HOST;
 $port = $PORT;
@@ -62,6 +63,33 @@ function status()
 		echo $key." ".$value.", ";
 	}
 }
+function getStageRobotName()
+{
+	global $STAGE_PATH, $STAGE_FILENAME;
+	$filename = $STAGE_FILENAME;
+	if (! file_exists($filename))
+	{
+		echo $filename;
+		return false;
+	} else
+	{
+		echo "stage ";
+		return true;
+	}
+}
+function getStageData()
+{
+	global $STAGE_PATH, $STAGE_FILENAME;
+	$filename = $STAGE_FILENAME;
+	if (! file_exists($filename))
+	{
+		return false;
+	}
+	$file = escapeshellarg($filename);
+	$line = `tail -n 1 $filename`;
+	backup_internal("stage-pi01", $line);
+	echo $line;
+}
 // get robot names
 function getNames()
 {
@@ -77,6 +105,7 @@ function getNames()
 			continue;
 		echo $tmp[$i]." ";
 	}
+	getStageRobotName();
 	return $tmp;
 }
 // return robot names
@@ -231,6 +260,7 @@ function getRobotData()
 		backup_internal($i, $ret);
 		echo $ret.", ";
 	}
+	getStageData();
 }
 // generate a random value
 function random_value()

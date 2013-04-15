@@ -324,6 +324,7 @@ var robotData = function ()
 		self.php_comm.cmd = "method=getRobotData";
 		self.php_comm.commPhp();
 		var robot = self.php_comm.receive.split(", ");
+document.getElementById("debug").innerHTML = "debug: " + robot;
 		// for each robot
 		for (var i in robot)
 		{
