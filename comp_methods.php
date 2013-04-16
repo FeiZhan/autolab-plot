@@ -27,6 +27,11 @@ $server = array(
 	'port'	=>	$port
 );
 $client = new Predis\Client($server);
+try {
+    $client->connect();
+} catch (Exception $e) {
+    exit($server." error: ".$e);
+}
 // create a backup host for backup historic data
 $bak_host = $SECOND_HOST;
 $bak_port = $PORT;
@@ -212,7 +217,13 @@ function timeTravel()
 function backup_internal($key, $data)
 {
 	global $bak_client;
-	if (is_null($bak_client) || is_null($bak_client->ping()))
+	try {
+		$bak_client->connect();
+	} catch (Exception $e) {
+		//echo "backup server error: ".$e;
+		return;
+	}
+	if (is_null($bak_client) || ! $bak_client->ping())
 	{
 		echo "cannot reach server";
 		return;
