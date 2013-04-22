@@ -3082,7 +3082,7 @@ var rosComm = function ()
 			{
 				msg_tmp += i + ": " + message[i] + " ";
 			}
-			php_comm.cmd = "method=backup&source=rostopic&key" + name_value + "&value=" + msg_tmp;
+			self.php_comm.cmd = "method=backup&source=rostopic&key" + name_value + "&value=" + msg_tmp;
 			//self.putLog("Received msg: " + msg_tmp, "log");
 			if (ret_type == "value")
 			{
