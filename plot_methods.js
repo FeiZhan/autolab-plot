@@ -2986,7 +2986,8 @@ var rosComm = function ()
 	this.subscribe_value_num = 1;
 	this.msg_log = true;
 	this.php_comm = new phpComm();
-	var ros = null, last_speech = "";
+	this.ignore_time = 1000;
+	var ros = null, last_speech = "", last_time = 0;
 	var self = this;
 	this.putLog = function (msg, type)
 	{
@@ -3106,9 +3107,11 @@ var rosComm = function ()
 			else if (ret_type == "speech")
 			{
 				content.value = msg_tmp;
-				if (message.data != last_speech)
+				now = new Date().getTime();
+				if (message.data != last_speech || now - last_time >= this.ignore_time)
 				{
 					last_speech = message.data;
+					last_time = new Date().getTime();
 					speak(message.data);
 				}
 			} else
