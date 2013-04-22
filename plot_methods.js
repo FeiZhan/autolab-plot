@@ -2982,7 +2982,7 @@ var rosComm = function ()
 	this.host = "";
 	this.publish_num = 1;
 	this.subscribe_str_num = 7;
-	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status"];
+	this.sub_str_name = ["/speech", "/d0/status", "/d1/status", "/status", "/d0/vslam/status", "/d1/vslam/status", "/recognizer/output"];
 	this.subscribe_value_num = 1;
 	this.msg_log = true;
 	this.php_comm = new phpComm();
@@ -3082,7 +3082,6 @@ var rosComm = function ()
 				msg_tmp += i + ": " + message[i] + " ";
 			}
 			php_comm.cmd = "method=backup&source=rostopic&key" + name_value + "&value=" + msg_tmp;
-document.getElementById("debug").innerHTML = "debug: " + php_comm.receive;
 			//self.putLog("Received msg: " + msg_tmp, "log");
 			if (ret_type == "value")
 			{
