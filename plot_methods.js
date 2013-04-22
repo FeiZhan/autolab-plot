@@ -3108,7 +3108,7 @@ var rosComm = function ()
 			{
 				content.value = msg_tmp;
 				now = new Date().getTime();
-				if (message.data != last_speech || now - last_time >= this.ignore_time)
+				if (message.data != last_speech || now - last_time >= self.ignore_time)
 				{
 					last_speech = message.data;
 					last_time = new Date().getTime();
