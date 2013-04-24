@@ -1832,7 +1832,7 @@ document.getElementById("debug").innerHTML = "debug rec: " + self.grid_php_comm.
 				line[rn[i]] = new Array();
 			}
 			var len = Math.min(data[rn[i]].length - 1, data2[rn[i]].length - 1);
-			var color = STATE_COLOR[0];
+			var color = "white"; //STATE_COLOR[0];
 			if ("colorful" == view_type)
 			{
 				color = parseInt(self.robot_data.getData(rn[i], "state"));
