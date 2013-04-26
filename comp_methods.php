@@ -11,8 +11,9 @@ $LAB = array(49.276802, -122.914913);
 $HOST = "192.168.1.120";
 $PORT = "6379";
 $SECOND_HOST = "localhost";
-$STAGE_PATH = "/home/fzhan/Documents/class/multimedia_systems/project/stage-mm/";
-$STAGE_FILENAME = "data/stage.log";
+//$STAGE_PATH = "/home/fzhan/Documents/class/multimedia_systems/project/stage-mm/";
+$STAGE_PATH = "./";
+$STAGE_FILENAME = "stage.log";
 
 $host = $HOST;
 $port = $PORT;
