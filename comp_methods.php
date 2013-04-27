@@ -308,7 +308,7 @@ function setStaticGraphics()
 	global $client;
 	$client->del("staticgraphics");
 	//map
-	$client->rpush("staticgraphics", "image -5 -4 http://192.168.1.116/autolab-plot/resource/cave_compact.png 10 8");
+	$client->rpush("staticgraphics", "image -5 -4 http://localhost/autolab-plot/resource/cave_compact.png 10 8");
 	// home
 	$client->rpush("staticgraphics", "circle -4.5 -3.5 0.3 pen blue 1 0");
 	// text home
